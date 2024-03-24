@@ -25,6 +25,6 @@ Once you've obtained the access token:
 
 ## Note on Access Token
 
-The generated token is short-lived and may expire after a certain period. To ensure continuous functionality, consider replacing it with a long-lived token, which lasts for 60 days.
+The generated token is short-lived and may expire after a certain period. To ensure continuous functionality, the code utilizes the short-lived token to obtain a long-lived token from the Facebook Graph API, which lasts for 60 days.
 
 For detailed instructions on generating and using access tokens, refer to the Facebook Graph API documentation.

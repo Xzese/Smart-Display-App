@@ -213,15 +213,15 @@ pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7, pady=(0, 0))
 pagevalue = tk.Label(root, text=os.getenv('IG_FOLLOWERS_COUNT'), bg="black", fg="white", font=("Arial", 150))
 pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7, pady=(0, 0))
 
-clockimage = tk.PhotoImage(file="Clock.png").subsample(10)
+clockimage = tk.PhotoImage(file=os.path.join("images","Clock.png")).subsample(10)
 clockbutton = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
 clockbutton.grid(row=0, column=9, sticky="ne", pady=(10,0), padx=(0, 10))
 
-instagramimage = tk.PhotoImage(file="Instagram.png").subsample(10)
-instagrambutton = tk.Button(root, image=instagramimage, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
+cameraimage = tk.PhotoImage(file=os.path.join("images","Camera.png"))..subsample(10)
+instagrambutton = tk.Button(root, image=cameraimage, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
 instagrambutton.grid(row=1, column=9, sticky="e", padx=(0, 10))
 
-weatherimage = tk.PhotoImage(file="Weather.png").subsample(5)
+weatherimage = tk.PhotoImage(file=os.path.join("images","Weather.png"))..subsample(5)
 weatherbutton = tk.Button(root, image=weatherimage, bg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
 weatherbutton.grid(row=2, column=9, sticky="se", pady=(0,10), padx=(0, 10))
 
