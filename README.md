@@ -28,3 +28,13 @@ Once you've obtained the access token:
 The generated token is short-lived and may expire after a certain period. To ensure continuous functionality, the code utilizes the short-lived token to obtain a long-lived token from the Facebook Graph API, which lasts for 60 days.
 
 For detailed instructions on generating and using access tokens, refer to the Facebook Graph API documentation.
+
+## Navigation Icons
+
+The application utilizes three image assets for navigation icons:
+
+- **Camera**: Represents the Instagram screen.
+- **Clock**: Represents the time screen.
+- **Weather**: Represents the weather screen.
+
+These icons enhance the user experience by providing visual cues for navigating between different screens.
