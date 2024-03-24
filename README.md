@@ -1,6 +1,6 @@
 # Smart Display App
 
-This application runs a smart display that shows screens for the time, Instagram followers, and weather. To use the app, follow the instructions below.
+This application runs a smart display that shows screens for the time, Instagram followers, and weather (currently weather is static as hasn't been implemented). To use the app, follow the instructions below.
 
 ## Generating Access Token
 

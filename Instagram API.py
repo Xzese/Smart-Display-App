@@ -3,6 +3,7 @@ import requests
 import dotenv
 import datetime
 import tkinter as tk
+from PIL import Image, ImageTk
 
 dotenv.load_dotenv()
 
@@ -160,28 +161,56 @@ def get_token():
         else:
             return os.environ['LONG_ACCESS_TOKEN']
 
-#print(update_ig_stats())
+def fit_image_to_widget(image_path, widget_width, widget_height):
+    try:
+        # Open the image using PIL (Python Imaging Library)
+        image = Image.open(image_path)
         
+        # Get the width and height of the image
+        image_width, image_height = image.size
+        
+        # Calculate the scale factor for width and height
+        width_scale = widget_width / image_width
+        height_scale = widget_height / image_height
+        
+        # Choose the smaller scale factor to ensure the image fits within the widget
+        scale_factor = min(width_scale, height_scale)
+        
+        # Resize the image using the calculated scale factor
+        resized_image = image.resize((int(image_width * scale_factor), int(image_height * scale_factor)), Image.BILINEAR)
+        
+        # Convert the resized image to a Tkinter PhotoImage
+        photo_image = ImageTk.PhotoImage(resized_image)
+        
+        return photo_image
+    except Exception as e:
+        print("Error:", e)
+        return None
+
 screen_update_id = None
 
 def switch_to_clock():
-    global screen_update_id
+    global screen_update_id, screen_image
     if screen_update_id:
         root.after_cancel(screen_update_id)
     pagelabel.configure(text="Time")
+    screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
+    screenlogo.configure(image=screen_image)
     update_clock()
 
 def update_clock():
     global screen_update_id
-    pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"), font=("Arial", 150))
+    pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"), font=(text_font, 150))
     screen_update_id = root.after(500, update_clock)
 
 def switch_to_instagram():
-    global screen_update_id
+    global screen_update_id, screen_image
     if screen_update_id:
         root.after_cancel(screen_update_id)
     pagelabel.configure(text="Followers")
-    pagevalue.configure(text=os.getenv('IG_FOLLOWERS_COUNT'), font=("Arial", 150))
+    pagevalue.configure(text=os.getenv('IG_FOLLOWERS_COUNT'), font=(text_font, 150))
+    screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
+    screenlogo.configure(image=screen_image)
     update_instagram()
 
 def update_instagram():
@@ -191,11 +220,13 @@ def update_instagram():
     screen_update_id = root.after(1000 * 5, update_instagram)
 
 def switch_to_weather():
-    global screen_update_id
+    global screen_update_id, screen_image
     if screen_update_id:
         root.after_cancel(screen_update_id)
     pagelabel.configure(text="Weather")
-    pagevalue.configure(text='10C, Rainy', font=("Arial", 100))
+    pagevalue.configure(text='10C, Rainy', font=(text_font, 100))
+    screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
+    screenlogo.configure(image=screen_image)
 
 # Create the main window
 root = tk.Tk()
@@ -203,25 +234,27 @@ root.geometry("1400x320")
 
 root.configure(bg="black")
 
-# Create and place widgets using the grid layout
-screenlogo = tk.Label(root, text="Logo", bg="black", fg="white", font=("Arial", 32))
-screenlogo.grid(row=0, column=0, sticky="nsw", rowspan=3, padx=(0, 0))
+text_font = 'Arial Rounded MT Bold'
 
-pagelabel = tk.Label(root, text="Followers", bg="black", fg="white", font=("Arial", 50))
+# Create and place widgets using the grid layout
+screenlogo = tk.Label(root, bg="black", fg="white", width=250, height=250)
+screenlogo.grid(row=0, column=0, sticky="nsw", rowspan=3, padx=(10, 0))
+
+pagelabel = tk.Label(root, text="Followers", bg="black", fg="white", font=(text_font, 50))
 pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7, pady=(0, 0))
 
-pagevalue = tk.Label(root, text=os.getenv('IG_FOLLOWERS_COUNT'), bg="black", fg="white", font=("Arial", 150))
+pagevalue = tk.Label(root, text=os.getenv('IG_FOLLOWERS_COUNT'), bg="black", fg="white", font=(text_font, 150))
 pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7, pady=(0, 0))
 
-clockimage = tk.PhotoImage(file=os.path.join("images","Clock.png")).subsample(10)
+clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
 clockbutton = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
 clockbutton.grid(row=0, column=9, sticky="ne", pady=(10,0), padx=(0, 10))
 
-cameraimage = tk.PhotoImage(file=os.path.join("images","Camera.png")).subsample(10)
+cameraimage = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
 instagrambutton = tk.Button(root, image=cameraimage, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
 instagrambutton.grid(row=1, column=9, sticky="e", padx=(0, 10))
 
-weatherimage = tk.PhotoImage(file=os.path.join("images","Weather.png")).subsample(5)
+weatherimage = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
 weatherbutton = tk.Button(root, image=weatherimage, bg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
 weatherbutton.grid(row=2, column=9, sticky="se", pady=(0,10), padx=(0, 10))
 
@@ -233,7 +266,7 @@ for x in range(0,8):
     root.columnconfigure(x, weight=1, minsize=100)
 root.columnconfigure(9, weight=1, minsize=25)
 
+switch_to_instagram()
+
 # Run the Tkinter event loop
 root.mainloop()
-
-root.after(1000, update_instagram)
