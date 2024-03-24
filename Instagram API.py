@@ -26,14 +26,14 @@ def exchange_facebook_token_for_instagram(facebook_access_token):
             # Parse the JSON response
             instagram_access_token = response.json()['access_token']
             expiry_date = request_date + datetime.timedelta(seconds=response.json()['expires_in'])
-            os.environ['IG_ACCESS_TOKEN'] = instagram_access_token
-            os.environ['IG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN", instagram_access_token)
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
+            os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
+            os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
             return "Token Exchange Success"
         except:
-            os.environ['FB_ACCESS_TOKEN'] = ''
-            dotenv.set_key('.env',"FB_ACCESS_TOKEN", '')
+            os.environ['SHORT_ACCESS_TOKEN'] = ''
+            dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", '')
             return None
     else:
         # Handle the error
@@ -57,16 +57,16 @@ def refresh_token(unexpired_ig_token):
             # Parse the JSON response
             instagram_access_token = response.json()['access_token']
             expiry_date = request_date + datetime.timedelta(seconds=response.json()['expires_in'])
-            os.environ['IG_ACCESS_TOKEN'] = instagram_access_token
-            os.environ['IG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN", instagram_access_token)
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
+            os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
+            os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
             return "Token Refresh Success"
         except:
-            os.environ['IG_ACCESS_TOKEN'] = ''
-            os.environ['IG_ACCESS_TOKEN_EXPIRY'] = ''
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN", '')
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN_EXPIRY", '')
+            os.environ['LONG_ACCESS_TOKEN'] = ''
+            os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = ''
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN", '')
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", '')
             return None
     else:
         # Handle the error
@@ -140,25 +140,25 @@ def update_ig_stats():
 
 def get_token():
     while True:
-        if (len(os.getenv('IG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('IG_ACCESS_TOKEN')) == 0) and len(os.getenv('FB_ACCESS_TOKEN')) == 0:
-            fb_access_token = input('Please Retrieve FB Access token from https://developers.facebook.com/tools/explorer/ and paste here: ')
-            os.environ['FB_ACCESS_TOKEN'] = fb_access_token
-            dotenv.set_key('.env',"FB_ACCESS_TOKEN", fb_access_token)
-        elif (len(os.getenv('IG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('IG_ACCESS_TOKEN')) == 0) and len(os.getenv('FB_ACCESS_TOKEN')) != 0:
-            instagram_access_token_result = exchange_facebook_token_for_instagram(os.environ['FB_ACCESS_TOKEN'])
+        if (len(os.getenv('LONG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('LONG_ACCESS_TOKEN')) == 0) and len(os.getenv('SHORT_ACCESS_TOKEN')) == 0:
+            SHORT_ACCESS_TOKEN = input('Please Retrieve FB Access token from https://developers.facebook.com/tools/explorer/ and paste here: ')
+            os.environ['SHORT_ACCESS_TOKEN'] = SHORT_ACCESS_TOKEN
+            dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", SHORT_ACCESS_TOKEN)
+        elif (len(os.getenv('LONG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('LONG_ACCESS_TOKEN')) == 0) and len(os.getenv('SHORT_ACCESS_TOKEN')) != 0:
+            instagram_access_token_result = exchange_facebook_token_for_instagram(os.environ['SHORT_ACCESS_TOKEN'])
             print(instagram_access_token_result)
-        elif datetime.datetime.strptime(os.getenv('IG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') < datetime.datetime.now():
+        elif datetime.datetime.strptime(os.getenv('LONG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') < datetime.datetime.now():
             print('IG Token Expired')
-            os.environ['IG_ACCESS_TOKEN'] = ''
-            os.environ['IG_ACCESS_TOKEN_EXPIRY'] = ''
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN", '')
-            dotenv.set_key('.env',"IG_ACCESS_TOKEN_EXPIRY", '')
-        #elif (datetime.datetime.strptime(os.getenv('IG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days < 59:
-        #    instagram_access_token_result = refresh_token(os.environ['IG_ACCESS_TOKEN'])
+            os.environ['LONG_ACCESS_TOKEN'] = ''
+            os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = ''
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN", '')
+            dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", '')
+        #elif (datetime.datetime.strptime(os.getenv('LONG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days < 59:
+        #    instagram_access_token_result = refresh_token(os.environ['LONG_ACCESS_TOKEN'])
         #    print(instagram_access_token_result)
         
         else:
-            return os.environ['IG_ACCESS_TOKEN']
+            return os.environ['LONG_ACCESS_TOKEN']
 
 #print(update_ig_stats())
         
