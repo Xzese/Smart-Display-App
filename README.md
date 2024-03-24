@@ -20,7 +20,7 @@ To generate an access token:
 
 Once you've obtained the access token:
 
-1. Paste it into the `.env` file as `FB_ACCESS_TOKEN`.
+1. Paste it into the `.env` file as `SHORT_ACCESS_TOKEN`.
 2. Run the application using the appropriate command (e.g., `python main.py`).
 
 ## Note on Access Token
