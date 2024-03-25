@@ -6,6 +6,8 @@ import datetime
 import tkinter as tk
 from PIL import Image, ImageTk
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 dotenv.load_dotenv()
 
 # If you already have the access token, you can use it directly
