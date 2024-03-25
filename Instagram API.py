@@ -161,6 +161,32 @@ def get_token():
         else:
             return os.environ['LONG_ACCESS_TOKEN']
 
+def get_weather():
+    endpoint_url = 'https://api.weatherapi.com/v1/forecast.json'
+    params = {
+        'key': os.getenv('WEATHER_API_KEY'),
+        'q': os.getenv('WEATHER_LOCATION'),
+        'days': '2',
+        'aqi': 'no',
+        'alerts': 'no',
+    }
+    response = requests.get(endpoint_url, params=params)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Parse the JSON response
+        weather_data = response.json()
+        if len(weather_data['forecast']['forecastday'][0]['hour']) < 13:
+            hour_index = 13 - len(weather_data['forecast']['forecastday'][0]['hour']) - 1
+            return weather_data['forecast']['forecastday'][1]['hour'][hour_index]
+        else:
+            return weather_data['forecast']['forecastday'][1]['hour'][13]
+    else:
+        # Print the error message if the request was not successful
+        print("Error Update User ID:", response.text)
+        return None
+
+
 def fit_image_to_widget(image_path, widget_width, widget_height):
     try:
         # Open the image using PIL (Python Imaging Library)
@@ -227,10 +253,18 @@ def switch_to_weather():
     if screen_update_id:
         root.after_cancel(screen_update_id)
     current_screen = "Weather"
-    pagelabel.configure(text="Weather")
-    pagevalue.configure(text='10C, Rainy', font=(text_font, 100))
+    pagelabel.configure(text="Weather Forecast")
+    pagevalue.configure(font=(text_font, 60))
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screenlogo.configure(image=screen_image)
+    update_weather()
+
+def update_weather():
+    global screen_update_id
+    weather = get_weather()
+    print(weather)
+    pagevalue.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
+    screen_update_id = root.after(1000*30, update_weather)
 
 def start_carousel():
     global current_screen
