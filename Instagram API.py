@@ -230,8 +230,12 @@ def switch_to_weather():
 
 # Create the main window
 root = tk.Tk()
-root.geometry("1400x320")
 
+display_width = 1480
+display_height = 320
+root.geometry(str(display_width) + 'x' + str(display_height))
+root.title("Smart Display")
+#root.attributes('-fullscreen', True)
 root.configure(bg="black")
 
 text_font = 'Arial Rounded MT Bold'
@@ -241,30 +245,30 @@ screenlogo = tk.Label(root, bg="black", fg="white", width=250, height=250)
 screenlogo.grid(row=0, column=0, sticky="nsw", rowspan=3, padx=(10, 0))
 
 pagelabel = tk.Label(root, text="Followers", bg="black", fg="white", font=(text_font, 50))
-pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7, pady=(0, 0))
+pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7)
 
 pagevalue = tk.Label(root, text=os.getenv('IG_FOLLOWERS_COUNT'), bg="black", fg="white", font=(text_font, 150))
-pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7, pady=(0, 0))
+pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7)
 
 clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
 clockbutton = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
-clockbutton.grid(row=0, column=9, sticky="ne", pady=(10,0), padx=(0, 10))
+clockbutton.grid(row=0, column=9, sticky="e", pady=(10,0), padx=(0, 10))
 
 cameraimage = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
 instagrambutton = tk.Button(root, image=cameraimage, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
 instagrambutton.grid(row=1, column=9, sticky="e", padx=(0, 10))
 
 weatherimage = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
-weatherbutton = tk.Button(root, image=weatherimage, bg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
-weatherbutton.grid(row=2, column=9, sticky="se", pady=(0,10), padx=(0, 10))
+weatherbutton = tk.Button(root, image=weatherimage, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
+weatherbutton.grid(row=2, column=9, sticky="e", padx=(0, 10))
 
 # Configure row and column sizes
-root.rowconfigure(0, weight=1, minsize=100)
-root.rowconfigure(1, weight=1, minsize=100)
-root.rowconfigure(2, weight=1, minsize=100)
+root.rowconfigure(0, weight=1, minsize=display_height/3)
+root.rowconfigure(1, weight=1, minsize=display_height/3)
+root.rowconfigure(2, weight=1, minsize=display_height/3)
 for x in range(0,8):
     root.columnconfigure(x, weight=1, minsize=100)
-root.columnconfigure(9, weight=1, minsize=25)
+root.columnconfigure(9, weight=1, minsize=50)
 
 switch_to_instagram()
 
