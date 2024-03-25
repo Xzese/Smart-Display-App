@@ -226,7 +226,7 @@ def switch_to_clock():
     if screen_update_id:
         root.after_cancel(screen_update_id)
     current_screen = "Clock"
-    pagelabel.configure(text="Time")
+    pagelabel.configure(text="Time Test")
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
     screenlogo.configure(image=screen_image)
     update_clock()
