@@ -1,6 +1,6 @@
 # Smart Display App
 
-This application runs a smart display that shows screens for the time, Instagram followers, and weather (currently weather is static as hasn't been implemented). To use the app, follow the instructions below.
+This application runs a smart display that shows screens for the time, Instagram followers, and weather. To use the app, follow the instructions below.
 
 ## Generating Access Token
 
@@ -38,3 +38,13 @@ The application utilizes three image assets for navigation icons:
 - **Weather**: Represents the weather screen.
 
 These icons enhance the user experience by providing visual cues for navigating between different screens.
+
+## Weather Functionality
+
+The weather functionality is based on data from [WeatherAPI.com](https://www.weatherapi.com/). To enable weather display:
+
+1. Create a free account on WeatherAPI.com.
+2. Obtain an API key.
+3. Add the API key to the `.env` file under the key `WEATHER_API_KEY`.
+4. Specify the location (e.g., UK Postcode, ZIP code, city) in the `.env` file under the key `WEATHER_LOCATION`.
+5. The weather information displayed is for 12 hours in advance.
