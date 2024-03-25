@@ -188,11 +188,13 @@ def fit_image_to_widget(image_path, widget_width, widget_height):
         return None
 
 screen_update_id = None
+current_screen = None
 
 def switch_to_clock():
-    global screen_update_id, screen_image
+    global screen_update_id, screen_image, current_screen
     if screen_update_id:
         root.after_cancel(screen_update_id)
+    current_screen = "Clock"
     pagelabel.configure(text="Time")
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
     screenlogo.configure(image=screen_image)
@@ -204,11 +206,12 @@ def update_clock():
     screen_update_id = root.after(500, update_clock)
 
 def switch_to_instagram():
-    global screen_update_id, screen_image
+    global screen_update_id, screen_image, current_screen
     if screen_update_id:
         root.after_cancel(screen_update_id)
-    pagelabel.configure(text="Followers")
-    pagevalue.configure(text=os.getenv('IG_FOLLOWERS_COUNT'), font=(text_font, 150))
+    current_screen = "Instagram"
+    pagelabel.configure(text="Followers", bg="black", fg="white", font=(text_font, 50))
+    pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), bg="black", fg="white", font=(text_font, 125))
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
     screenlogo.configure(image=screen_image)
     update_instagram()
@@ -216,17 +219,30 @@ def switch_to_instagram():
 def update_instagram():
     global screen_update_id
     update_ig_stats()
-    pagevalue.configure(text=os.getenv('IG_FOLLOWERS_COUNT'))
+    pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
     screen_update_id = root.after(1000 * 5, update_instagram)
 
 def switch_to_weather():
-    global screen_update_id, screen_image
+    global screen_update_id, screen_image, current_screen
     if screen_update_id:
         root.after_cancel(screen_update_id)
+    current_screen = "Weather"
     pagelabel.configure(text="Weather")
     pagevalue.configure(text='10C, Rainy', font=(text_font, 100))
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screenlogo.configure(image=screen_image)
+
+def start_carousel():
+    global current_screen
+    if current_screen == None or current_screen == "Weather":
+        switch_to_instagram()
+    elif current_screen == "Instagram":
+        switch_to_clock()
+    elif current_screen == "Clock":
+        switch_to_weather()
+    root.after(1000 * 10,start_carousel)
+    
+
 
 # Create the main window
 root = tk.Tk()
@@ -244,10 +260,10 @@ text_font = 'Arial Rounded MT Bold'
 screenlogo = tk.Label(root, bg="black", fg="white", width=250, height=250)
 screenlogo.grid(row=0, column=0, sticky="nsw", rowspan=3, padx=(10, 0))
 
-pagelabel = tk.Label(root, text="Followers", bg="black", fg="white", font=(text_font, 50))
+pagelabel = tk.Label(root)
 pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7)
 
-pagevalue = tk.Label(root, text=os.getenv('IG_FOLLOWERS_COUNT'), bg="black", fg="white", font=(text_font, 150))
+pagevalue = tk.Label(root)
 pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7)
 
 clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
@@ -270,7 +286,7 @@ for x in range(0,8):
     root.columnconfigure(x, weight=1, minsize=100)
 root.columnconfigure(9, weight=1, minsize=50)
 
-switch_to_instagram()
+start_carousel()
 
 # Run the Tkinter event loop
 root.mainloop()
