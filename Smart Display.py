@@ -176,11 +176,13 @@ def get_weather():
     if response.status_code == 200:
         # Parse the JSON response
         weather_data = response.json()
-        if len(weather_data['forecast']['forecastday'][0]['hour']) < 13:
-            hour_index = 13 - len(weather_data['forecast']['forecastday'][0]['hour']) - 1
-            return weather_data['forecast']['forecastday'][1]['hour'][hour_index]
+        current_hour = datetime.datetime.now().hour
+        forecast_hour = 12 if current_hour < 12 else 18 if current_hour < 18 else 36
+        time_name = "Afternoon" if forecast_hour == 12 else "Evening" if forecast_hour == 18 else "Tomorrow"
+        if forecast_hour >= 24:
+            return time_name, weather_data['forecast']['forecastday'][1]['hour'][forecast_hour - 24]
         else:
-            return weather_data['forecast']['forecastday'][1]['hour'][13]
+            return time_name, weather_data['forecast']['forecastday'][0]['hour'][forecast_hour]
     else:
         # Print the error message if the request was not successful
         print("Error Update User ID:", response.text)
@@ -228,7 +230,10 @@ def switch_to_clock():
 
 def update_clock():
     global screen_update_id
-    pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"), font=(text_font, 150))
+    try:
+        pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"), font=(text_font, 150))
+    except Exception as e:
+        print("An error occured with update clock page: ", e)
     screen_update_id = root.after(500, update_clock)
 
 def switch_to_instagram():
@@ -236,16 +241,19 @@ def switch_to_instagram():
     if screen_update_id:
         root.after_cancel(screen_update_id)
     current_screen = "Instagram"
-    pagelabel.configure(text="Followers", bg="black", fg="white", font=(text_font, 50))
-    pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), bg="black", fg="white", font=(text_font, 125))
+    pagelabel.configure(text="Followers")
+    pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), font=(text_font, 125))
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
     screenlogo.configure(image=screen_image)
     update_instagram()
 
 def update_instagram():
     global screen_update_id
-    update_ig_stats()
-    pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
+    try:
+        update_ig_stats()
+        pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
+    except Exception as e:
+        print("An error occured with update instagram page: ", e)
     screen_update_id = root.after(1000 * 5, update_instagram)
 
 def switch_to_weather():
@@ -253,7 +261,6 @@ def switch_to_weather():
     if screen_update_id:
         root.after_cancel(screen_update_id)
     current_screen = "Weather"
-    pagelabel.configure(text="Weather Forecast")
     pagevalue.configure(font=(text_font, 60))
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screenlogo.configure(image=screen_image)
@@ -261,23 +268,28 @@ def switch_to_weather():
 
 def update_weather():
     global screen_update_id
-    weather = get_weather()
-    print(weather)
-    pagevalue.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
+    try:
+        time_name, weather = get_weather()
+        print(weather)
+        pagelabel.configure(text="Weather Forecast - " + time_name)
+        pagevalue.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
+    except Exception as e:
+        print("An error occured with update weather page: ", e)
     screen_update_id = root.after(1000*30, update_weather)
 
 def start_carousel():
     global current_screen
-    if current_screen == None or current_screen == "Weather":
-        switch_to_instagram()
-    elif current_screen == "Instagram":
-        switch_to_clock()
-    elif current_screen == "Clock":
-        switch_to_weather()
+    try:
+        if current_screen == "Weather":
+            switch_to_instagram()
+        elif current_screen == None or current_screen == "Instagram":
+            switch_to_clock()
+        elif current_screen == "Clock":
+            switch_to_weather()
+    except Exception as e:
+        print("An error occured with carousel: ", e)
     root.after(1000 * 10,start_carousel)
     
-
-
 # Create the main window
 root = tk.Tk()
 
@@ -285,8 +297,10 @@ display_width = 1480
 display_height = 320
 root.geometry(str(display_width) + 'x' + str(display_height))
 root.title("Smart Display")
-#root.attributes('-fullscreen', True)
-root.configure(bg="black")
+
+root.attributes('-fullscreen', False if os.getenv('FULLSCREEN') == "false" else True)
+
+root.configure(bg="black", cursor="none")
 
 text_font = 'Arial Rounded MT Bold'
 
@@ -294,10 +308,10 @@ text_font = 'Arial Rounded MT Bold'
 screenlogo = tk.Label(root, bg="black", fg="white", width=250, height=250)
 screenlogo.grid(row=0, column=0, sticky="nsw", rowspan=3, padx=(10, 0))
 
-pagelabel = tk.Label(root)
+pagelabel = tk.Label(root, bg="black", fg="white", font=(text_font, 50))
 pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7)
 
-pagevalue = tk.Label(root)
+pagevalue = tk.Label(root, bg="black", fg="white")
 pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7)
 
 clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
@@ -320,7 +334,7 @@ for x in range(0,8):
     root.columnconfigure(x, weight=1, minsize=100)
 root.columnconfigure(9, weight=1, minsize=50)
 
-start_carousel()
+switch_to_weather()
 
 # Run the Tkinter event loop
 root.mainloop()
