@@ -47,4 +47,4 @@ The weather functionality is based on data from [WeatherAPI.com](https://www.wea
 2. Obtain an API key.
 3. Add the API key to the `.env` file under the key `WEATHER_API_KEY`.
 4. Specify the location (e.g., UK Postcode, ZIP code, city) in the `.env` file under the key `WEATHER_LOCATION`.
-5. The weather information displayed is for 12 hours in advance.
+5. The weather information displayed is for 12:00 if the time is before, for 18:00 if time is 12:00-17:59 and for tomorrow 12:00 if the time is 18:00 onwards.

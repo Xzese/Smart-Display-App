@@ -334,7 +334,7 @@ for x in range(0,8):
     root.columnconfigure(x, weight=1, minsize=100)
 root.columnconfigure(9, weight=1, minsize=50)
 
-switch_to_weather()
+start_carousel()
 
 # Run the Tkinter event loop
 root.mainloop()
