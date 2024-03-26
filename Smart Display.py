@@ -128,9 +128,11 @@ def update_ig_stats():
             # Parse the JSON response
             account_details = response.json()
             # Print the user's profile information
+            os.environ['IG_FOLLOWER_CHANGE'] = "None" if int(account_details['followers_count']) == int(os.environ['IG_FOLLOWERS_COUNT']) else "Increase" if int(account_details['followers_count']) > int(os.environ['IG_FOLLOWERS_COUNT']) else "Decrease"
             os.environ['IG_FOLLOWERS_COUNT'] = str(account_details['followers_count'])
             os.environ['IG_FOLLOWS_COUNT'] = str(account_details['follows_count'])
             os.environ['IG_LAST_UPDATED'] = str(datetime.datetime.now())
+            dotenv.set_key('.env',"IG_FOLLOWER_CHANGE", os.environ["IG_FOLLOWER_CHANGE"])
             dotenv.set_key('.env',"IG_FOLLOWERS_COUNT", os.environ["IG_FOLLOWERS_COUNT"])
             dotenv.set_key('.env',"IG_FOLLOWS_COUNT", os.environ["IG_FOLLOWS_COUNT"])
             dotenv.set_key('.env',"IG_LAST_UPDATED", os.environ["IG_LAST_UPDATED"])
@@ -255,9 +257,25 @@ def update_instagram():
     try:
         update_ig_stats()
         pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
+        change = os.getenv('IG_FOLLOWER_CHANGE')
+        if change == "Increase":
+            # Alternate color every second between white and green
+            if pagevalue.cget('fg') == 'white':
+                pagevalue.configure(fg='green')
+            else:
+                pagevalue.configure(fg='white')
+        elif change == "Decrease":
+            # Alternate color every second between white and red
+            if pagevalue.cget('fg') == 'white':
+                pagevalue.configure(fg='red')
+            else:
+                pagevalue.configure(fg='white')
+        else:
+            # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
+            pagevalue.configure(fg='white')
     except Exception as e:
         print("An error occured with update instagram page: ", e)
-    screen_update_id = root.after(1000 * 5, update_instagram)
+    screen_update_id = root.after(1000 * 1, update_instagram)
 
 def switch_to_weather():
     global screen_update_id, screen_image, current_screen
