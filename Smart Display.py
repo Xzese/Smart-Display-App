@@ -220,40 +220,54 @@ def fit_image_to_widget(image_path, widget_width, widget_height):
         print("Error:", e)
         return None
 
-screen_update_id = None
+if os.getenv('PAGE_TRANSITION_TIME') is None:
+    os.environ['PAGE_TRANSITION_TIME'] = '10'
+    dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ["PAGE_TRANSITION_TIME"])
+if os.getenv('FULLSCREEN') is None:
+    os.environ['FULLSCREEN'] = 'true'
+    dotenv.set_key('.env',"FULLSCREEN", os.environ["FULLSCREEN"])
+if os.getenv('CAROUSEL') is None:
+    os.environ['CAROUSEL'] = 'true'
+    dotenv.set_key('.env',"CAROUSEL", os.environ["CAROUSEL"])
+
+page_transition_time = int(os.getenv('PAGE_TRANSITION_TIME'))
+screen_refresh_process = None
+carousel_update_process = None
 current_screen = None
 
 def switch_to_clock():
-    global screen_update_id, screen_image, current_screen
-    if screen_update_id:
-        root.after_cancel(screen_update_id)
+    global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
     current_screen = "Clock"
+    root.after_cancel(carousel_update_process) if carousel_update_process else None
+    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     pagelabel.configure(text="Time")
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
     screenlogo.configure(image=screen_image)
-    update_clock()
+    refresh_clock()
+    carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
-def update_clock():
-    global screen_update_id
+def refresh_clock():
+    global screen_refresh_process
     try:
         pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"), font=(text_font, 150))
     except Exception as e:
         print("An error occured with update clock page: ", e)
-    screen_update_id = root.after(500, update_clock)
+    screen_refresh_process = root.after(500, refresh_clock)
 
 def switch_to_instagram():
-    global screen_update_id, screen_image, current_screen
-    if screen_update_id:
-        root.after_cancel(screen_update_id)
+    global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
     current_screen = "Instagram"
+    root.after_cancel(carousel_update_process) if carousel_update_process else None
+    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     pagelabel.configure(text="Followers")
     pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), font=(text_font, 125))
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
     screenlogo.configure(image=screen_image)
-    update_instagram()
+    refresh_instagram()
+    carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
-def update_instagram():
-    global screen_update_id
+def refresh_instagram():
+    global screen_refresh_process
     try:
         update_ig_stats()
         pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
@@ -261,13 +275,13 @@ def update_instagram():
         if change == "Increase":
             # Alternate color every second between white and green
             if pagevalue.cget('fg') == 'white':
-                pagevalue.configure(fg='green')
+                pagevalue.configure(fg='#32CD32')
             else:
                 pagevalue.configure(fg='white')
         elif change == "Decrease":
             # Alternate color every second between white and red
             if pagevalue.cget('fg') == 'white':
-                pagevalue.configure(fg='red')
+                pagevalue.configure(fg='#FF6347')
             else:
                 pagevalue.configure(fg='white')
         else:
@@ -275,20 +289,21 @@ def update_instagram():
             pagevalue.configure(fg='white')
     except Exception as e:
         print("An error occured with update instagram page: ", e)
-    screen_update_id = root.after(1000 * 1, update_instagram)
+    screen_refresh_process = root.after(1000 * 1, refresh_instagram)
 
 def switch_to_weather():
-    global screen_update_id, screen_image, current_screen
-    if screen_update_id:
-        root.after_cancel(screen_update_id)
+    global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
     current_screen = "Weather"
+    root.after_cancel(carousel_update_process) if carousel_update_process else None
+    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     pagevalue.configure(font=(text_font, 60))
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screenlogo.configure(image=screen_image)
-    update_weather()
+    refresh_weather()
+    carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
-def update_weather():
-    global screen_update_id
+def refresh_weather():
+    global screen_refresh_process
     try:
         time_name, weather = get_weather()
         print(weather)
@@ -296,7 +311,7 @@ def update_weather():
         pagevalue.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
     except Exception as e:
         print("An error occured with update weather page: ", e)
-    screen_update_id = root.after(1000*30, update_weather)
+    screen_refresh_process = root.after(1000*30, refresh_weather)
 
 def start_carousel():
     global current_screen
@@ -309,7 +324,6 @@ def start_carousel():
             switch_to_weather()
     except Exception as e:
         print("An error occured with carousel: ", e)
-    root.after(1000 * 10,start_carousel)
     
 # Create the main window
 root = tk.Tk()
