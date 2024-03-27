@@ -350,7 +350,6 @@ root.configure(bg="black", cursor="none")
 
 text_font = 'Arial Rounded MT Bold'
 
-# Create and place widgets using the grid layout
 screenlogo = tk.Label(root, bg="black", fg="white")
 screenlogo.place(x=10, y=(display_height-250)/2, width=250, height=250)
 
@@ -373,14 +372,6 @@ instagrambutton.place(x=display_width-50-10,y=(display_height-50)/2,width=50,hei
 weatherimage = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
 weatherbutton = tk.Button(root, image=weatherimage, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
 weatherbutton.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
-
-# Configure row and column sizes
-root.rowconfigure(0, weight=1, minsize=display_height/3)
-root.rowconfigure(1, weight=1, minsize=display_height/3)
-root.rowconfigure(2, weight=1, minsize=display_height/3)
-for x in range(0,8):
-    root.columnconfigure(x, weight=1, minsize=100)
-root.columnconfigure(9, weight=1, minsize=50)
 
 start_carousel()
 
