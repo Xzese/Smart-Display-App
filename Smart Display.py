@@ -193,7 +193,6 @@ def get_weather():
         print("Error Update User ID:", response.text)
         return None
 
-
 def fit_image_to_widget(image_path, widget_width, widget_height):
     try:
         # Open the image using PIL (Python Imaging Library)
@@ -220,33 +219,30 @@ def fit_image_to_widget(image_path, widget_width, widget_height):
         print("Error:", e)
         return None
     
-if os.getenv('PAGE_TRANSITION_TIME') is None:
-    os.environ['PAGE_TRANSITION_TIME'] = '10'
-    dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ["PAGE_TRANSITION_TIME"])
-if os.getenv('FULLSCREEN') is None:
-    os.environ['FULLSCREEN'] = 'true'
-    dotenv.set_key('.env',"FULLSCREEN", os.environ["FULLSCREEN"])
-if os.getenv('CAROUSEL') is None:
-    os.environ['CAROUSEL'] = 'true'
-    dotenv.set_key('.env',"CAROUSEL", os.environ["CAROUSEL"])
-
-page_transition_time = int(os.getenv('PAGE_TRANSITION_TIME'))
-screen_refresh_process = None
-carousel_update_process = None
-current_screen = None
+def initialize_environment():
+    if os.getenv('PAGE_TRANSITION_TIME') is None:
+        os.environ['PAGE_TRANSITION_TIME'] = '10'
+        dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ["PAGE_TRANSITION_TIME"])
+    if os.getenv('FULLSCREEN') is None:
+        os.environ['FULLSCREEN'] = 'true'
+        dotenv.set_key('.env',"FULLSCREEN", os.environ["FULLSCREEN"])
+    if os.getenv('CAROUSEL') is None:
+        os.environ['CAROUSEL'] = 'true'
+        dotenv.set_key('.env',"CAROUSEL", os.environ["CAROUSEL"])
+    return int(os.getenv('PAGE_TRANSITION_TIME')), None, None, None
 
 def switch_to_clock():
     global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
     current_screen = "Clock"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    pagelabel.configure(text="Time")
+    page_label.configure(text="Time")
     instagram_value.place_forget()
     time_value.place(x=260+20, y=100, width=920, height=200)
     date_value.place(x=1160, y=100, width=180, height=200)
     weather_value.place_forget()
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
-    screenlogo.configure(image=screen_image)
+    screen_logo.configure(image=screen_image)
     refresh_clock()
     carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -264,13 +260,13 @@ def switch_to_instagram():
     current_screen = "Instagram"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    pagelabel.configure(text="Followers")
+    page_label.configure(text="Followers")
     instagram_value.place(x=280, y=100, width=960, height=200)
     time_value.place_forget()
     date_value.place_forget()
     weather_value.place_forget()
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
-    screenlogo.configure(image=screen_image)
+    screen_logo.configure(image=screen_image)
     refresh_instagram()
     carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -309,7 +305,7 @@ def switch_to_weather():
     date_value.place_forget()
     weather_value.place(x=260, y=100, width=1000, height=200)
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
-    screenlogo.configure(image=screen_image)
+    screen_logo.configure(image=screen_image)
     refresh_weather()
     carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -318,7 +314,7 @@ def refresh_weather():
     try:
         time_name, weather = get_weather()
         print(weather)
-        pagelabel.configure(text="Weather Forecast - " + time_name)
+        page_label.configure(text="Weather Forecast - " + time_name)
         weather_value.configure(text=(str(weather['temp_c'])+'°C\n'+weather['condition']['text']))
     except Exception as e:
         print("An error occured with update weather page: ", e)
@@ -336,25 +332,23 @@ def start_carousel():
     except Exception as e:
         print("An error occured with carousel: ", e)
     
-# Create the main window
 root = tk.Tk()
 
 display_width = 1480
 display_height = 320
+
 root.geometry(str(display_width) + 'x' + str(display_height))
 root.title("Smart Display")
-
 root.attributes('-fullscreen', False if os.getenv('FULLSCREEN') == "false" else True)
-
 root.configure(bg="black", cursor="none")
 
 text_font = 'Arial Rounded MT Bold'
 
-screenlogo = tk.Label(root, bg="black", fg="white")
-screenlogo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+screen_logo = tk.Label(root, bg="black", fg="white")
+screen_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
 
-pagelabel = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
-pagelabel.place(x=260, y=10, width=1000, height=100)
+page_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
+page_label.place(x=260, y=10, width=1000, height=100)
 
 time_value = tk.Label(root, bg="black", fg="white", font=(text_font, 150), anchor="center")
 date_value = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
@@ -362,18 +356,19 @@ instagram_value = tk.Label(root, bg="black", fg="white", font=(text_font, 125), 
 weather_value = tk.Label(root, bg="black", fg="white", font=(text_font, 60), anchor="center")
 
 clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
-clockbutton = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
-clockbutton.place(x=display_width-50-10,y=30,width=50,height=50)
+clock_button = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
+clock_button.place(x=display_width-50-10,y=30,width=50,height=50)
 
-cameraimage = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
-instagrambutton = tk.Button(root, image=cameraimage, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
-instagrambutton.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
+camera_image = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
+instagram_button = tk.Button(root, image=camera_image, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
+instagram_button.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
 
-weatherimage = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
-weatherbutton = tk.Button(root, image=weatherimage, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
-weatherbutton.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
+weather_image = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
+weather_button = tk.Button(root, image=weather_image, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
+weather_button.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
+
+page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
 
 start_carousel()
 
-# Run the Tkinter event loop
 root.mainloop()
