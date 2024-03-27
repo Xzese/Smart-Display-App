@@ -219,21 +219,7 @@ def fit_image_to_widget(image_path, widget_width, widget_height):
     except Exception as e:
         print("Error:", e)
         return None
-
-def get_ordinal_suffix(day):
-    if 10 <= day % 100 <= 20:
-        suffix = 'th'
-    else:
-        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
-    return suffix
-
-def get_formatted_date():
-    current_date = datetime.datetime.now()
-    day = current_date.strftime("%d")
-    ordinal_suffix = get_ordinal_suffix(int(day))
-    formatted_date = current_date.strftime(f"Time on %d{ordinal_suffix} %b %Y")
-    return formatted_date
-
+    
 if os.getenv('PAGE_TRANSITION_TIME') is None:
     os.environ['PAGE_TRANSITION_TIME'] = '10'
     dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ["PAGE_TRANSITION_TIME"])
@@ -255,6 +241,10 @@ def switch_to_clock():
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     pagelabel.configure(text="Time")
+    instagram_value.place_forget()
+    time_value.place(x=260+20, y=100, width=920, height=200)
+    date_value.place(x=1160, y=100, width=180, height=200)
+    weather_value.place_forget()
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
     screenlogo.configure(image=screen_image)
     refresh_clock()
@@ -263,9 +253,8 @@ def switch_to_clock():
 def refresh_clock():
     global screen_refresh_process
     try:
-
-        pagelabel.configure(text=get_formatted_date())
-        pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"),fg="white", font=(text_font, 150))
+        date_value.configure(text=datetime.datetime.now().strftime("%d\n%b"))
+        time_value.configure(text=datetime.datetime.now().strftime("%H:%M:%S"),fg="white")
     except Exception as e:
         print("An error occured with update clock page: ", e)
     screen_refresh_process = root.after(500, refresh_clock)
@@ -276,7 +265,10 @@ def switch_to_instagram():
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     pagelabel.configure(text="Followers")
-    pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), font=(text_font, 125))
+    instagram_value.place(x=280, y=100, width=960, height=200)
+    time_value.place_forget()
+    date_value.place_forget()
+    weather_value.place_forget()
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
     screenlogo.configure(image=screen_image)
     refresh_instagram()
@@ -286,23 +278,23 @@ def refresh_instagram():
     global screen_refresh_process
     try:
         update_ig_stats()
-        pagevalue.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
+        instagram_value.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
         change = os.getenv('IG_FOLLOWER_CHANGE')
         if change == "Increase":
             # Alternate color every second between white and green
-            if pagevalue.cget('fg') == 'white':
-                pagevalue.configure(fg='#32CD32')
+            if instagram_value.cget('fg') == 'white':
+                instagram_value.configure(fg='#32CD32')
             else:
-                pagevalue.configure(fg='white')
+                instagram_value.configure(fg='white')
         elif change == "Decrease":
             # Alternate color every second between white and red
-            if pagevalue.cget('fg') == 'white':
-                pagevalue.configure(fg='#FF6347')
+            if instagram_value.cget('fg') == 'white':
+                instagram_value.configure(fg='#FF6347')
             else:
-                pagevalue.configure(fg='white')
+                instagram_value.configure(fg='white')
         else:
             # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
-            pagevalue.configure(fg='white')
+            instagram_value.configure(fg='white')
     except Exception as e:
         print("An error occured with update instagram page: ", e)
     screen_refresh_process = root.after(1000 * 1, refresh_instagram)
@@ -312,7 +304,10 @@ def switch_to_weather():
     current_screen = "Weather"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    pagevalue.configure(font=(text_font, 60))
+    instagram_value.place_forget()
+    time_value.place_forget()
+    date_value.place_forget()
+    weather_value.place(x=280, y=100, width=960, height=200)
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screenlogo.configure(image=screen_image)
     refresh_weather()
@@ -324,7 +319,7 @@ def refresh_weather():
         time_name, weather = get_weather()
         print(weather)
         pagelabel.configure(text="Weather Forecast - " + time_name)
-        pagevalue.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
+        weather_value.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
     except Exception as e:
         print("An error occured with update weather page: ", e)
     screen_refresh_process = root.after(1000*30, refresh_weather)
@@ -356,26 +351,28 @@ root.configure(bg="black", cursor="none")
 text_font = 'Arial Rounded MT Bold'
 
 # Create and place widgets using the grid layout
-screenlogo = tk.Label(root, bg="black", fg="white", width=250, height=250)
-screenlogo.grid(row=0, column=0, sticky="nsw", rowspan=3, padx=(10, 0))
+screenlogo = tk.Label(root, bg="black", fg="white")
+screenlogo.place(x=10, y=(display_height-250)/2, width=250, height=250)
 
-pagelabel = tk.Label(root, bg="black", fg="white", font=(text_font, 50))
-pagelabel.grid(row=0, column=1, sticky="nsew", columnspan=7)
+pagelabel = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
+pagelabel.place(x=280, y=10, width=960, height=100)
 
-pagevalue = tk.Label(root, bg="black", fg="white")
-pagevalue.grid(row=1, column=1, sticky="nsew", rowspan=2, columnspan=7)
+time_value = tk.Label(root, bg="black", fg="white", font=(text_font, 150), anchor="center")
+date_value = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
+instagram_value = tk.Label(root, bg="black", fg="white", font=(text_font, 125), anchor="center")
+weather_value = tk.Label(root, bg="black", fg="white", font=(text_font, 60), anchor="center")
 
 clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
 clockbutton = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
-clockbutton.grid(row=0, column=9, sticky="e", pady=(10,0), padx=(0, 10))
+clockbutton.place(x=display_width-50-10,y=30,width=50,height=50)
 
 cameraimage = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
 instagrambutton = tk.Button(root, image=cameraimage, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
-instagrambutton.grid(row=1, column=9, sticky="e", padx=(0, 10))
+instagrambutton.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
 
 weatherimage = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
 weatherbutton = tk.Button(root, image=weatherimage, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
-weatherbutton.grid(row=2, column=9, sticky="e", padx=(0, 10))
+weatherbutton.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
 
 # Configure row and column sizes
 root.rowconfigure(0, weight=1, minsize=display_height/3)
