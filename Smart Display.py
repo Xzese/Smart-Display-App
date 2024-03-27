@@ -220,6 +220,20 @@ def fit_image_to_widget(image_path, widget_width, widget_height):
         print("Error:", e)
         return None
 
+def get_ordinal_suffix(day):
+    if 10 <= day % 100 <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    return suffix
+
+def get_formatted_date():
+    current_date = datetime.datetime.now()
+    day = current_date.strftime("%d")
+    ordinal_suffix = get_ordinal_suffix(int(day))
+    formatted_date = current_date.strftime(f"Time on %d{ordinal_suffix} %b %Y")
+    return formatted_date
+
 if os.getenv('PAGE_TRANSITION_TIME') is None:
     os.environ['PAGE_TRANSITION_TIME'] = '10'
     dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ["PAGE_TRANSITION_TIME"])
@@ -249,7 +263,9 @@ def switch_to_clock():
 def refresh_clock():
     global screen_refresh_process
     try:
-        pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"), font=(text_font, 150))
+
+        pagelabel.configure(text=get_formatted_date())
+        pagevalue.configure(text=datetime.datetime.now().strftime("%H:%M:%S"),fg="white", font=(text_font, 150))
     except Exception as e:
         print("An error occured with update clock page: ", e)
     screen_refresh_process = root.after(500, refresh_clock)
