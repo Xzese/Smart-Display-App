@@ -165,31 +165,42 @@ def get_token():
             return os.environ['LONG_ACCESS_TOKEN']
 
 def get_weather():
-    endpoint_url = 'https://api.weatherapi.com/v1/forecast.json'
-    params = {
-        'key': os.getenv('WEATHER_API_KEY'),
-        'q': os.getenv('WEATHER_LOCATION'),
-        'days': '2',
-        'aqi': 'no',
-        'alerts': 'no',
-    }
-    response = requests.get(endpoint_url, params=params)
+    if os.getenv('WEATHER_LAST_UPDATED') is None or (datetime.datetime.now() - datetime.datetime.strptime(os.getenv('WEATHER_LAST_UPDATED'), '%Y-%m-%d %H:%M:%S.%f')). total_seconds() > 60:
+        endpoint_url = 'https://api.weatherapi.com/v1/forecast.json'
+        params = {
+            'key': os.getenv('WEATHER_API_KEY'),
+            'q': os.getenv('WEATHER_LOCATION'),
+            'days': '2',
+            'aqi': 'no',
+            'alerts': 'no',
+        }
+        response = requests.get(endpoint_url, params=params)
 
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Parse the JSON response
-        weather_data = response.json()
-        current_hour = datetime.datetime.now().hour
-        forecast_hour = 12 if current_hour < 12 else 18 if current_hour < 18 else 36
-        time_name = "Afternoon" if forecast_hour == 12 else "Evening" if forecast_hour == 18 else "Tomorrow"
-        if forecast_hour >= 24:
-            return time_name, weather_data['forecast']['forecastday'][1]['hour'][forecast_hour - 24]
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+            # Parse the JSON response
+            weather_data = response.json()
+
+            current_time = datetime.datetime.now()
+            forecast_hour = 12 if current_time.hour < 10 else 18 if current_time.hour < 16 else 36
+            forecast_weather = weather_data['forecast']['forecastday'][1]['hour'][forecast_hour - 24] if forecast_hour >= 24 else weather_data['forecast']['forecastday'][0]['hour'][forecast_hour]
+
+            os.environ['WEATHER_LAST_UPDATED'] = str(current_time)
+            os.environ['WEATHER_NOW_TEMP'] = str(weather_data['current']['temp_c'])
+            os.environ['WEATHER_NOW_CONDITIONS'] = str(weather_data['current']['condition']['text'])
+            os.environ['WEATHER_FUTURE_TIME'] = "Afternoon" if forecast_hour == 12 else "Evening" if forecast_hour == 18 else "Tomorrow"
+            os.environ['WEATHER_FUTURE_TEMP'] = str(forecast_weather['temp_c'])
+            os.environ['WEATHER_FUTURE_CONDITIONS'] = str(forecast_weather['condition']['text'])
+            dotenv.set_key('.env',"WEATHER_LAST_UPDATED", os.environ['WEATHER_LAST_UPDATED'])
+            dotenv.set_key('.env',"WEATHER_NOW_TEMP", os.environ['WEATHER_NOW_TEMP'])
+            dotenv.set_key('.env',"WEATHER_NOW_CONDITIONS", os.environ['WEATHER_NOW_CONDITIONS'])
+            dotenv.set_key('.env',"WEATHER_FUTURE_TIME", os.environ['WEATHER_FUTURE_TIME'])
+            dotenv.set_key('.env',"WEATHER_FUTURE_TEMP", os.environ['WEATHER_FUTURE_TEMP'])
+            dotenv.set_key('.env',"WEATHER_FUTURE_CONDITIONS", os.environ['WEATHER_FUTURE_CONDITIONS'])
         else:
-            return time_name, weather_data['forecast']['forecastday'][0]['hour'][forecast_hour]
-    else:
-        # Print the error message if the request was not successful
-        print("Error Update User ID:", response.text)
-        return None
+            # Print the error message if the request was not successful
+            print("Error Get Weather:", response.text)
+            return None
 
 def fit_image_to_widget(image_path, widget_width, widget_height):
     try:
@@ -236,8 +247,8 @@ def switch_to_clock():
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     page_label.configure(text="Time")
     clear_page_transition()
-    time_value.place(x=260+20, y=100, width=920, height=200)
-    date_value.place(x=1160, y=100, width=180, height=200)
+    clock_time.place(x=260+20, y=100, width=920, height=200)
+    clock_date.place(x=1160, y=100, width=180, height=200)
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
     screen_logo.configure(image=screen_image)
     refresh_clock()
@@ -246,8 +257,8 @@ def switch_to_clock():
 def refresh_clock():
     global screen_refresh_process
     try:
-        date_value.configure(text=datetime.datetime.now().strftime("%d\n%b"))
-        time_value.configure(text=datetime.datetime.now().strftime("%H:%M:%S"),fg="white")
+        clock_date.configure(text=datetime.datetime.now().strftime("%d\n%b"))
+        clock_time.configure(text=datetime.datetime.now().strftime("%H:%M:%S"),fg="white")
     except Exception as e:
         print("An error occured with update clock page: ", e)
     screen_refresh_process = root.after(500, refresh_clock)
@@ -259,7 +270,7 @@ def switch_to_instagram():
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     page_label.configure(text="Followers")
     clear_page_transition()
-    instagram_value.place(x=280, y=100, width=960, height=200)
+    instagram_followers.place(x=280, y=100, width=960, height=200)
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
     screen_logo.configure(image=screen_image)
     refresh_instagram()
@@ -269,23 +280,23 @@ def refresh_instagram():
     global screen_refresh_process
     try:
         update_ig_stats()
-        instagram_value.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
+        instagram_followers.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
         change = os.getenv('IG_FOLLOWER_CHANGE')
         if change == "Increase":
             # Alternate color every second between white and green
-            if instagram_value.cget('fg') == 'white':
-                instagram_value.configure(fg='#32CD32')
+            if instagram_followers.cget('fg') == 'white':
+                instagram_followers.configure(fg='#32CD32')
             else:
-                instagram_value.configure(fg='white')
+                instagram_followers.configure(fg='white')
         elif change == "Decrease":
             # Alternate color every second between white and red
-            if instagram_value.cget('fg') == 'white':
-                instagram_value.configure(fg='#FF6347')
+            if instagram_followers.cget('fg') == 'white':
+                instagram_followers.configure(fg='#FF6347')
             else:
-                instagram_value.configure(fg='white')
+                instagram_followers.configure(fg='white')
         else:
             # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
-            instagram_value.configure(fg='white')
+            instagram_followers.configure(fg='white')
     except Exception as e:
         print("An error occured with update instagram page: ", e)
     screen_refresh_process = root.after(1000 * 1, refresh_instagram)
@@ -295,9 +306,14 @@ def switch_to_weather():
     current_screen = "Weather"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    page_label.configure(text="Weather Forecast")
+    page_label.configure(text="Weather")
     clear_page_transition()
-    weather_value.place(x=260, y=100, width=1000, height=200)
+    weather_now_label.place(x=260, y=100, width=480, height=40)
+    weather_now_temp.place(x=260, y=155, width=480, height=80)
+    weather_now_conditions.place(x=260, y=235, width=480, height=80)
+    weather_future_label.place(x=760, y=100, width=480, height=40)
+    weather_future_temp.place(x=760, y=155, width=480, height=80)
+    weather_future_conditions.place(x=760, y=235, width=480, height=80)
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screen_logo.configure(image=screen_image)
     refresh_weather()
@@ -306,13 +322,15 @@ def switch_to_weather():
 def refresh_weather():
     global screen_refresh_process
     try:
-        time_name, weather = get_weather()
-        print(weather)
-        page_label.configure(text="Weather Forecast - " + time_name)
-        weather_value.configure(text=(str(weather['temp_c'])+'°C\n'+weather['condition']['text']))
+        get_weather()
+        weather_now_temp.configure(text=str(os.getenv('WEATHER_NOW_TEMP'))+"°C")
+        weather_now_conditions.configure(text=str(os.getenv('WEATHER_NOW_CONDITIONS')))
+        weather_future_temp.configure(text=str(os.getenv('WEATHER_FUTURE_TEMP'))+"°C")
+        weather_future_conditions.configure(text=str(os.getenv('WEATHER_FUTURE_CONDITIONS')))
+        weather_future_label.configure(text=str(os.getenv('WEATHER_FUTURE_TIME')))
     except Exception as e:
         print("An error occured with update weather page: ", e)
-    screen_refresh_process = root.after(1000*30, refresh_weather)
+    screen_refresh_process = root.after(1000*1, refresh_weather)
 
 def start_carousel():
     global current_screen
@@ -327,10 +345,15 @@ def start_carousel():
         print("An error occured with carousel: ", e)
 
 def clear_page_transition():
-    instagram_value.place_forget()
-    time_value.place_forget()
-    date_value.place_forget()
-    weather_value.place_forget()
+    instagram_followers.place_forget()
+    clock_time.place_forget()
+    clock_date.place_forget()
+    weather_now_temp.place_forget()
+    weather_now_conditions.place_forget()
+    weather_future_temp.place_forget()
+    weather_future_conditions.place_forget()
+    weather_now_label.place_forget()
+    weather_future_label.place_forget()
 
 root = tk.Tk()
 
@@ -350,10 +373,15 @@ screen_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
 page_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
 page_label.place(x=260, y=10, width=1000, height=100)
 
-time_value = tk.Label(root, bg="black", fg="white", font=(text_font, 150), anchor="center")
-date_value = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
-instagram_value = tk.Label(root, bg="black", fg="white", font=(text_font, 125), anchor="center")
-weather_value = tk.Label(root, bg="black", fg="white", font=(text_font, 60), anchor="center")
+clock_time = tk.Label(root, bg="black", fg="white", font=(text_font, 150), anchor="center")
+clock_date = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
+instagram_followers = tk.Label(root, bg="black", fg="white", font=(text_font, 125), anchor="center")
+weather_now_label = tk.Label(root, bg="black", fg="white", font=(text_font, 30), anchor="center", text="Now")
+weather_now_temp = tk.Label(root, bg="black", fg="white", font=(text_font, 70), anchor="center")
+weather_now_conditions = tk.Label(root, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
+weather_future_label = tk.Label(root, bg="black", fg="white", font=(text_font, 30), anchor="center")
+weather_future_temp = tk.Label(root, bg="black", fg="white", font=(text_font, 70), anchor="center")
+weather_future_conditions = tk.Label(root, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
 
 clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
 clock_button = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
