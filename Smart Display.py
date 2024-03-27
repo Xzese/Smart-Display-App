@@ -307,7 +307,7 @@ def switch_to_weather():
     instagram_value.place_forget()
     time_value.place_forget()
     date_value.place_forget()
-    weather_value.place(x=280, y=100, width=960, height=200)
+    weather_value.place(x=260, y=100, width=1000, height=200)
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screenlogo.configure(image=screen_image)
     refresh_weather()
@@ -319,7 +319,7 @@ def refresh_weather():
         time_name, weather = get_weather()
         print(weather)
         pagelabel.configure(text="Weather Forecast - " + time_name)
-        weather_value.configure(text=(str(weather['temp_c'])+'°C, '+weather['condition']['text']))
+        weather_value.configure(text=(str(weather['temp_c'])+'°C\n'+weather['condition']['text']))
     except Exception as e:
         print("An error occured with update weather page: ", e)
     screen_refresh_process = root.after(1000*30, refresh_weather)
@@ -354,7 +354,7 @@ screenlogo = tk.Label(root, bg="black", fg="white")
 screenlogo.place(x=10, y=(display_height-250)/2, width=250, height=250)
 
 pagelabel = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
-pagelabel.place(x=280, y=10, width=960, height=100)
+pagelabel.place(x=260, y=10, width=1000, height=100)
 
 time_value = tk.Label(root, bg="black", fg="white", font=(text_font, 150), anchor="center")
 date_value = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
