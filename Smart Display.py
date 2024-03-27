@@ -10,8 +10,6 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 dotenv.load_dotenv()
 
-# If you already have the access token, you can use it directly
-
 def exchange_facebook_token_for_instagram(facebook_access_token):
 
     endpoint_url = 'https://graph.facebook.com/v19.0/oauth/access_token'
@@ -237,10 +235,9 @@ def switch_to_clock():
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     page_label.configure(text="Time")
-    instagram_value.place_forget()
+    clear_page_transition()
     time_value.place(x=260+20, y=100, width=920, height=200)
     date_value.place(x=1160, y=100, width=180, height=200)
-    weather_value.place_forget()
     screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
     screen_logo.configure(image=screen_image)
     refresh_clock()
@@ -261,10 +258,8 @@ def switch_to_instagram():
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     page_label.configure(text="Followers")
+    clear_page_transition()
     instagram_value.place(x=280, y=100, width=960, height=200)
-    time_value.place_forget()
-    date_value.place_forget()
-    weather_value.place_forget()
     screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
     screen_logo.configure(image=screen_image)
     refresh_instagram()
@@ -300,9 +295,8 @@ def switch_to_weather():
     current_screen = "Weather"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    instagram_value.place_forget()
-    time_value.place_forget()
-    date_value.place_forget()
+    page_label.configure(text="Weather Forecast")
+    clear_page_transition()
     weather_value.place(x=260, y=100, width=1000, height=200)
     screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
     screen_logo.configure(image=screen_image)
@@ -331,7 +325,13 @@ def start_carousel():
             switch_to_weather()
     except Exception as e:
         print("An error occured with carousel: ", e)
-    
+
+def clear_page_transition():
+    instagram_value.place_forget()
+    time_value.place_forget()
+    date_value.place_forget()
+    weather_value.place_forget()
+
 root = tk.Tk()
 
 display_width = 1480
