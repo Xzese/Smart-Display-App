@@ -245,12 +245,11 @@ def switch_to_clock():
     current_screen = "Clock"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    page_label.configure(text="Time")
     clear_page_transition()
+    clock_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+    clock_label.place(x=260, y=10, width=1000, height=100)
     clock_time.place(x=260+20, y=100, width=920, height=200)
     clock_date.place(x=1160, y=100, width=180, height=200)
-    screen_image = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
-    screen_logo.configure(image=screen_image)
     refresh_clock()
     carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -268,11 +267,10 @@ def switch_to_instagram():
     current_screen = "Instagram"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    page_label.configure(text="Followers")
     clear_page_transition()
+    camera_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+    instagram_label.place(x=260, y=10, width=1000, height=100)
     instagram_followers.place(x=280, y=100, width=960, height=200)
-    screen_image = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
-    screen_logo.configure(image=screen_image)
     refresh_instagram()
     carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -306,7 +304,6 @@ def switch_to_weather():
     current_screen = "Weather"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    page_label.configure(text="Weather")
     clear_page_transition()
     weather_now_label.place(x=260, y=100, width=480, height=40)
     weather_now_temp.place(x=260, y=155, width=480, height=80)
@@ -314,8 +311,8 @@ def switch_to_weather():
     weather_future_label.place(x=760, y=100, width=480, height=40)
     weather_future_temp.place(x=760, y=155, width=480, height=80)
     weather_future_conditions.place(x=760, y=235, width=480, height=80)
-    screen_image = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
-    screen_logo.configure(image=screen_image)
+    weather_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+    weather_label.place(x=260, y=10, width=1000, height=100)
     refresh_weather()
     carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -354,9 +351,16 @@ def clear_page_transition():
     weather_future_conditions.place_forget()
     weather_now_label.place_forget()
     weather_future_label.place_forget()
+    clock_logo.place_forget() 
+    weather_logo.place_forget()
+    camera_logo.place_forget()
+    clock_label.place_forget()
+    weather_label.place_forget()
+    instagram_label.place_forget()
 
 root = tk.Tk()
 
+text_font = 'Arial Rounded MT Bold'
 display_width = 1480
 display_height = 320
 
@@ -365,14 +369,19 @@ root.title("Smart Display")
 root.attributes('-fullscreen', False if os.getenv('FULLSCREEN') == "false" else True)
 root.configure(bg="black", cursor="none")
 
-text_font = 'Arial Rounded MT Bold'
+clock_image_large = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
+clock_image_small = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
+weather_image_large = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
+weather_image_small = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
+camera_image_large = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
+camera_image_small = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
 
-screen_logo = tk.Label(root, bg="black", fg="white")
-screen_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
-
-page_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
-page_label.place(x=260, y=10, width=1000, height=100)
-
+clock_logo = tk.Label(root, bg="black", fg="white", image=clock_image_large)
+weather_logo = tk.Label(root, bg="black", fg="white", image=weather_image_large)
+camera_logo = tk.Label(root, bg="black", fg="white", image=camera_image_large)
+clock_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Time")
+weather_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Weather")
+instagram_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Followers")
 clock_time = tk.Label(root, bg="black", fg="white", font=(text_font, 150), anchor="center")
 clock_date = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center")
 instagram_followers = tk.Label(root, bg="black", fg="white", font=(text_font, 125), anchor="center")
@@ -383,16 +392,11 @@ weather_future_label = tk.Label(root, bg="black", fg="white", font=(text_font, 3
 weather_future_temp = tk.Label(root, bg="black", fg="white", font=(text_font, 70), anchor="center")
 weather_future_conditions = tk.Label(root, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
 
-clockimage = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
-clock_button = tk.Button(root, image=clockimage, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
+clock_button = tk.Button(root, image=clock_image_small, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
+instagram_button = tk.Button(root, image=camera_image_small, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
+weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
 clock_button.place(x=display_width-50-10,y=30,width=50,height=50)
-
-camera_image = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
-instagram_button = tk.Button(root, image=camera_image, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
 instagram_button.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
-
-weather_image = fit_image_to_widget(os.path.join("images","Weather.png"),50,50)
-weather_button = tk.Button(root, image=weather_image, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
 weather_button.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
 
 page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
