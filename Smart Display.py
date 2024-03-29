@@ -10,7 +10,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 dotenv.load_dotenv()
 
-def exchange_facebook_token_for_instagram(facebook_access_token):
+def exchange_short_for_long_token(facebook_access_token):
 
     endpoint_url = 'https://graph.facebook.com/v19.0/oauth/access_token'
     params = {
@@ -155,7 +155,7 @@ def get_token():
             os.environ['SHORT_ACCESS_TOKEN'] = SHORT_ACCESS_TOKEN
             dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", SHORT_ACCESS_TOKEN)
         elif (len(os.getenv('LONG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('LONG_ACCESS_TOKEN')) == 0) and len(os.getenv('SHORT_ACCESS_TOKEN')) != 0:
-            instagram_access_token_result = exchange_facebook_token_for_instagram(os.environ['SHORT_ACCESS_TOKEN'])
+            instagram_access_token_result = exchange_short_for_long_token(os.environ['SHORT_ACCESS_TOKEN'])
             print(instagram_access_token_result)
         elif datetime.datetime.strptime(os.getenv('LONG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') < datetime.datetime.now():
             print('IG Token Expired')

@@ -15,7 +15,6 @@ To obtain an access token, follow these steps:
    - `pages_show_list`
    - `business_management`
    - `instagram_basic`
-   - `instagram_manage_insights`
 7. Click "Generate Access Token" and copy the token.
 
 ## Running the Application
