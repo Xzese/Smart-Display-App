@@ -4,17 +4,19 @@ This application runs a smart display that shows screens for the time, Instagram
 
 ## Generating Access Token
 
-To generate an access token:
+To obtain an access token, follow these steps:
 
-1. Visit the [Facebook Graph Explorer](https://developers.facebook.com/tools/explorer/).
-2. Select your app from the "Application" dropdown menu.
-3. Click on "Get Token" and select "Get User Access Token".
-4. Choose the required permissions/scope:
+1. Create a Business Development App on Facebook.
+2. Add the Instagram Graph API product to your app.
+3. Visit the [Facebook Graph Explorer](https://developers.facebook.com/tools/explorer/).
+4. Select your app from the "Application" dropdown menu.
+5. Click on "Get Token" and choose "Get User Access Token".
+6. Select the required permissions/scope:
    - `pages_show_list`
    - `business_management`
    - `instagram_basic`
    - `instagram_manage_insights`
-5. Click "Generate Access Token" and copy the token.
+7. Click "Generate Access Token" and copy the token.
 
 ## Running the Application
 
