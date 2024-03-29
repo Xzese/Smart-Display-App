@@ -20,10 +20,13 @@ To obtain an access token, follow these steps:
 
 ## Running the Application
 
-Once you've obtained the access token:
+To run the application:
 
-1. Paste it into the `.env` file as `SHORT_ACCESS_TOKEN`.
-2. Run the application using the appropriate command (e.g., `python main.py`).
+1. If the `.env` file does not already contain a `SHORT_ACCESS_TOKEN`, the application will prompt you to enter the access token in the terminal.
+2. After entering the access token, the application will use it to exchange for a Long Lived Access Token.
+3. If the Short Lived Access Token hasn't expired, the Long Lived Access Token will be saved as `LONG_ACCESS_TOKEN` in the `.env` file.
+4. If the Short Lived Access Token has expired, it will be deleted from the `.env` file, and the application will prompt you again for another access token.
+5. Once the access token is obtained and saved in the `.env` file, the application will proceed to run the tkinter display.
 
 ## Note on Access Token
 
@@ -35,8 +38,8 @@ For detailed instructions on generating and using access tokens, refer to the Fa
 
 The application utilizes three image assets for navigation icons:
 
-- **Camera**: Represents the Instagram screen.
 - **Clock**: Represents the time screen.
+- **Instagram**: Represents the Instagram screen.
 - **Weather**: Represents the weather screen.
 
 These icons enhance the user experience by providing visual cues for navigating between different screens.
@@ -48,5 +51,9 @@ The weather functionality is based on data from [WeatherAPI.com](https://www.wea
 1. Create a free account on WeatherAPI.com.
 2. Obtain an API key.
 3. Add the API key to the `.env` file under the key `WEATHER_API_KEY`.
-4. Specify the location (e.g., UK Postcode, ZIP code, city) in the `.env` file under the key `WEATHER_LOCATION`.
-5. The weather information displayed is for 12:00 if the time is before, for 18:00 if time is 12:00-17:59 and for tomorrow 12:00 if the time is 18:00 onwards.
+4. Specify the location (e.g., UK Postcode, ZIP code, City, Latitude, Longitude, etc.) in the `.env` file under the key `WEATHER_LOCATION`.
+5. The weather information displayed includes the current temperature and conditions, as well as the forecast. The forecast varies depending on the current time:
+   - Before 10:00 AM: Shows the weather forecast for 12:00 PM.
+   - After 10:00 AM and before 4:00 PM: Shows the forecast for 6:00 PM.
+   - After 4:00 PM: Shows the forecast for 12:00 PM of the following day.
+   - After 12:00 AM: Shows the forecast for 12:00 PM of the same day.

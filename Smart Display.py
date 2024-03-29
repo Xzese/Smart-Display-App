@@ -39,7 +39,12 @@ def exchange_facebook_token_for_instagram(facebook_access_token):
             return None
     else:
         # Handle the error
-        print("Error Exchange Token:", response.text)
+        if response.text.__contains__("Session has expired"):
+            os.environ['SHORT_ACCESS_TOKEN'] = ''
+            dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", '')
+            print("Short Lived Token Expired")
+        else:
+            print("Error Exchange Token:", response.text)
         return None
 
 #Refresh token doesn't currently work as the endpoint isn't working properly
@@ -146,7 +151,7 @@ def update_ig_stats():
 def get_token():
     while True:
         if (len(os.getenv('LONG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('LONG_ACCESS_TOKEN')) == 0) and len(os.getenv('SHORT_ACCESS_TOKEN')) == 0:
-            SHORT_ACCESS_TOKEN = input('Please Retrieve FB Access token from https://developers.facebook.com/tools/explorer/ and paste here: ')
+            SHORT_ACCESS_TOKEN = input('Please Retrieve Short Lived Access token from https://developers.facebook.com/tools/explorer/ and paste here: ')
             os.environ['SHORT_ACCESS_TOKEN'] = SHORT_ACCESS_TOKEN
             dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", SHORT_ACCESS_TOKEN)
         elif (len(os.getenv('LONG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('LONG_ACCESS_TOKEN')) == 0) and len(os.getenv('SHORT_ACCESS_TOKEN')) != 0:
