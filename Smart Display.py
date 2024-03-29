@@ -41,7 +41,8 @@ def exchange_facebook_token_for_instagram(facebook_access_token):
         # Handle the error
         print("Error Exchange Token:", response.text)
         return None
-    
+
+#Refresh token doesn't currently work as the endpoint isn't working properly
 def refresh_token(unexpired_ig_token):
 
     endpoint_url = 'https://graph.instagram.com/refresh_access_token'
