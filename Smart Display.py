@@ -4,11 +4,72 @@ import requests
 import dotenv
 import datetime
 import tkinter as tk
+import webbrowser
 from PIL import Image, ImageTk
+from flask import Flask, request, redirect
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 dotenv.load_dotenv()
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Authorization Server is running"
+
+@app.route('/callback')
+def callback():
+    code = request.args.get('code')
+    if code:
+        return exchange_code_for_token(code)
+    else:
+        return 'Error: Code not received'
+
+def get_access_code():
+    auth_url = 'https://www.facebook.com/v19.0/dialog/oauth'
+    params = {
+        'client_id': os.getenv('CLIENT_ID'),
+        'redirect_uri': "https://"+os.getenv('CLIENT_IP_ADDRESS')+":5000/callback",
+        'state': "{st=state123abc,ds=123456789}",
+        'scope':"pages_show_list,business_management,instagram_basic",
+        'response_type': 'code'
+    }
+    authorization_url = f"{auth_url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}"
+    print(authorization_url)
+    return authorization_url
+
+def exchange_code_for_token(code):
+    endpoint_url = 'https://graph.facebook.com/v19.0/oauth/access_token'
+    params = {
+        'client_id': os.getenv('CLIENT_ID'),
+        'client_secret': os.getenv('CLIENT_SECRET'),
+        'grant_type': 'authorization_code',
+        'redirect_uri': 'https://'+os.getenv('CLIENT_IP_ADDRESS')+':5000/callback',
+        'code': code
+    }
+    response = requests.post(endpoint_url, params=params)
+    if response.status_code == 200:
+        instagram_access_token = response.json()['access_token']
+        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=response.json()['expires_in'])
+        os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
+        os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
+        dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
+        dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
+        return response.json()
+    else:
+        return 'Error: Failed to exchange authorization code for token'
+
+def run_server():
+    app.run(host=os.getenv('CLIENT_IP_ADDRESS'), debug=True, port=5000, ssl_context='adhoc')
+
+def shutdown_server():
+    flask_server = app.__dict__.get('srv')
+    if flask_server is not None:
+        flask_server.shutdown()
+
+webbrowser.open(get_access_code(),new=1, autoraise=True)
+run_server()
 
 def exchange_short_for_long_token(facebook_access_token):
 
@@ -24,19 +85,14 @@ def exchange_short_for_long_token(facebook_access_token):
 
     # Check if the request was successful
     if response.status_code == 200:
-        try:
-            # Parse the JSON response
-            instagram_access_token = response.json()['access_token']
-            expiry_date = request_date + datetime.timedelta(seconds=response.json()['expires_in'])
-            os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
-            os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
-            dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
-            dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
-            return "Token Exchange Success"
-        except:
-            os.environ['SHORT_ACCESS_TOKEN'] = ''
-            dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", '')
-            return None
+        # Parse the JSON response
+        instagram_access_token = response.json()['access_token']
+        expiry_date = request_date + datetime.timedelta(seconds=response.json()['expires_in'])
+        os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
+        os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
+        dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
+        dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
+        return "Token Exchange Success"
     else:
         # Handle the error
         if response.text.__contains__("Session has expired"):
@@ -151,6 +207,7 @@ def update_ig_stats():
 def get_token():
     while True:
         if (len(os.getenv('LONG_ACCESS_TOKEN_EXPIRY')) == 0 or len(os.getenv('LONG_ACCESS_TOKEN')) == 0) and len(os.getenv('SHORT_ACCESS_TOKEN')) == 0:
+            get_access_code()
             SHORT_ACCESS_TOKEN = input('Please Retrieve Short Lived Access token from https://developers.facebook.com/tools/explorer/ and paste here: ')
             os.environ['SHORT_ACCESS_TOKEN'] = SHORT_ACCESS_TOKEN
             dotenv.set_key('.env',"SHORT_ACCESS_TOKEN", SHORT_ACCESS_TOKEN)
