@@ -361,6 +361,9 @@ def clear_page_transition():
     instagram_button.config(relief=tk.RAISED)
     weather_button.config(relief=tk.RAISED)
 
+def release_button(event):
+    event.widget.config(relief=tk.RAISED)
+
 root = tk.Tk()
 
 text_font = 'Arial Rounded MT Bold'
@@ -395,12 +398,17 @@ weather_future_label = tk.Label(root, bg="black", fg="white", font=(text_font, 3
 weather_future_temp = tk.Label(root, bg="black", fg="white", font=(text_font, 70), anchor="center")
 weather_future_conditions = tk.Label(root, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
 
-clock_button = tk.Button(root, image=clock_image_small, bg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
-instagram_button = tk.Button(root, image=camera_image_small, bg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
+clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
+instagram_button = tk.Button(root, image=camera_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
 weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
+
 clock_button.place(x=display_width-50-10,y=30,width=50,height=50)
 instagram_button.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
 weather_button.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
+
+clock_button.bind("<ButtonRelease-1>",release_button)
+instagram_button.bind("<ButtonRelease-1>",release_button)
+weather_button.bind("<ButtonRelease-1>",release_button)
 
 page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
 
