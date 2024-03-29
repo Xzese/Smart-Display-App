@@ -406,9 +406,9 @@ clock_button.place(x=display_width-50-10,y=30,width=50,height=50)
 instagram_button.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
 weather_button.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
 
-clock_button.bind("<ButtonRelease-1>",release_button)
-instagram_button.bind("<ButtonRelease-1>",release_button)
-weather_button.bind("<ButtonRelease-1>",release_button)
+clock_button.bind("<Button-1>",release_button)
+instagram_button.bind("<Button-1>",release_button)
+weather_button.bind("<Button-1>",release_button)
 
 page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
 
