@@ -359,7 +359,7 @@ def clear_page_transition():
     instagram_label.place_forget()
 
 def release_button(event):
-    event.widget.config(relief="raised")
+    event.widget.config(relief="raised", bg="green")
 
 root = tk.Tk()
 
