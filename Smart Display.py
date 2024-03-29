@@ -358,9 +358,6 @@ def clear_page_transition():
     weather_label.place_forget()
     instagram_label.place_forget()
 
-def release_button(event):
-    event.widget.config(relief="raised", bg="green")
-
 root = tk.Tk()
 
 text_font = 'Arial Rounded MT Bold'
@@ -402,10 +399,6 @@ weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="blac
 clock_button.place(x=display_width-50-10,y=30,width=50,height=50)
 instagram_button.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
 weather_button.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
-
-clock_button.bind("<ButtonRelease-1>",release_button)
-instagram_button.bind("<ButtonRelease-1>",release_button)
-weather_button.bind("<ButtonRelease-1>",release_button)
 
 page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
 
