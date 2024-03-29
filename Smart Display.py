@@ -241,7 +241,7 @@ def initialize_environment():
     return int(os.getenv('PAGE_TRANSITION_TIME')), None, None, None
 
 def switch_to_clock():
-    global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
+    global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
     current_screen = "Clock"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
@@ -263,7 +263,7 @@ def refresh_clock():
     screen_refresh_process = root.after(500, refresh_clock)
 
 def switch_to_instagram():
-    global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
+    global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
     current_screen = "Instagram"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
@@ -300,7 +300,7 @@ def refresh_instagram():
     screen_refresh_process = root.after(1000 * 1, refresh_instagram)
 
 def switch_to_weather():
-    global screen_refresh_process, screen_image, current_screen, carousel_update_process, page_transition_time
+    global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
     current_screen = "Weather"
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
@@ -357,6 +357,9 @@ def clear_page_transition():
     clock_label.place_forget()
     weather_label.place_forget()
     instagram_label.place_forget()
+    clock_button.config(relief=tk.RAISED)
+    instagram_button.config(relief=tk.RAISED)
+    weather_button.config(relief=tk.RAISED)
 
 root = tk.Tk()
 
