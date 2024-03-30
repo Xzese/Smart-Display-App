@@ -56,11 +56,11 @@ def exchange_code_for_token(code):
     if response.status_code == 200:
         instagram_access_token = response.json()['access_token']
         expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=response.json()['expires_in'])
-        os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
-        os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
+        os.environ['ACCESS_TOKEN'] = instagram_access_token
+        os.environ['ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
         os.environ['IG_BUSINESS_USER_ID'] = ''
-        dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
-        dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
+        dotenv.set_key('.env',"ACCESS_TOKEN", instagram_access_token)
+        dotenv.set_key('.env',"ACCESS_TOKEN_EXPIRY", str(expiry_date))
         dotenv.set_key('.env',"IG_BUSINESS_USER_ID", os.environ['IG_BUSINESS_USER_ID'])
         return response.json()
     else:

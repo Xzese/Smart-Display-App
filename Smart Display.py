@@ -15,7 +15,7 @@ dotenv.load_dotenv()
 
 def update_ig_stats(): 
 
-    access_token = os.getenv('LONG_ACCESS_TOKEN')
+    access_token = os.getenv('ACCESS_TOKEN')
     user_id = os.getenv('IG_BUSINESS_USER_ID')
 
     #get Business Account ID if missing
@@ -257,13 +257,18 @@ def switch_to_settings():
     weather_button.configure(bg="#505050")
     settings_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
     settings_label.place(x=260, y=10, width=1000, height=100)
-    token_days_remaining = (datetime.datetime.strptime(os.getenv('LONG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days
+    token_days_remaining = (datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days
     if token_days_remaining >= 0:
         token_label.configure(text="Token Has\n"+str(token_days_remaining)+" Days Remaining")
     else:
-        token_label.configure(text="Token Has\n Expired", bg="black")
-    token_label.place(x=300, y=110, width=300, height=100)
-    refresh_token_button.place(x=350, y=210, width=200, height=50)
+        token_label.configure(text="Token Has\n Expired")
+    carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
+    carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
+    close_window_button.place(x=300, y=35, width=200, height=50)
+    carousel_stop_start_label.place(x=300, y=110, width=200, height=100)
+    carousel_stop_start_button.place(x=350, y=210, width=100, height=50)
+    token_label.place(x=500, y=110, width=300, height=100)
+    refresh_token_button.place(x=550, y=210, width=200, height=50)
 
 def start_carousel():
     global current_screen
@@ -276,6 +281,15 @@ def start_carousel():
             switch_to_weather()
     except Exception as e:
         print("An error occured with carousel: ", e)
+
+def carousel_stop_start():
+    if os.getenv('CAROUSEL') == 'true':
+        os.environ['CAROUSEL'] = 'false'
+    else:
+        os.environ['CAROUSEL'] = 'true'
+    dotenv.set_key('.env',"CAROUSEL", os.environ['CAROUSEL'])
+    carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
+    carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
 
 def clear_page_transition():
     instagram_followers.place_forget()
@@ -296,6 +310,9 @@ def clear_page_transition():
     token_label.place_forget()
     refresh_token_button.place_forget()
     qrcode_image_label.place_forget()
+    carousel_stop_start_label.place_forget()
+    carousel_stop_start_button.place_forget()
+    close_window_button.place_forget()
     root.configure(bg="black")
     settings_button.configure(bg="black")
     clock_button.configure(bg="black")
@@ -319,7 +336,7 @@ def refresh_token():
     refresh_token_button.configure(command=lambda: native_capture(auth_url), text="Open Browser")
     qrcode_image_label.configure(image=qrcode_image)
     qrcode_image_label.image = qrcode_image
-    qrcode_image_label.place(x=600, y=85, width=250, height=250)
+    qrcode_image_label.place(x=775, y=85, width=250, height=250)
 
     token_thread = threading.Thread(target=wait_for_token)
     token_thread.start()
@@ -338,6 +355,11 @@ def create_qrcode(auth_url):
     pil_image = qr.make_image(fill_color="black", back_color="white")
     photo_image = ImageTk.PhotoImage(pil_image)
     return photo_image
+
+def on_closing():
+    stop_server()
+    print("Window is closing...")
+    root.destroy()
 
 root = tk.Tk()
 
@@ -367,6 +389,7 @@ qrcode_image_label = tk.Label(root, bg="#505050", fg="#505050")
 
 settings_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 50), anchor="center", text="Settings")
 token_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has\nX Days Remaining")
+carousel_stop_start_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Carousel is\nRunning")
 clock_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Time")
 weather_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Weather")
 instagram_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Followers")
@@ -390,6 +413,8 @@ total_vertical_spacing = vertical_margin_top + vertical_margin_bottom
 available_vertical_space = display_height - total_button_height - total_vertical_spacing
 vertical_spacing = available_vertical_space / (4 - 1)
 
+close_window_button = tk.Button(root, text="Close App", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=on_closing, bd=1, highlightthickness=1)
+carousel_stop_start_button = tk.Button(root, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
 refresh_token_button = tk.Button(root, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
 settings_button = tk.Button(root, image=cog_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_settings, bd=0, highlightthickness=0)
 clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_clock, bd=0, highlightthickness=0)
@@ -404,5 +429,7 @@ weather_button.place(x=display_width-button_size-vertical_margin_right,y=(button
 page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
 
 start_carousel()
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
 root.mainloop()
