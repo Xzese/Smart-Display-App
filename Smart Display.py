@@ -13,69 +13,71 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 dotenv.load_dotenv()
 
-def update_ig_stats(): 
+def update_ig_stats():
+    if os.getenv('ACCESS_TOKEN') is not None and os.getenv('ACCESS_TOKEN') != '' and os.getenv('ACCESS_TOKEN_EXPIRY') is not None and os.getenv('ACCESS_TOKEN_EXPIRY') != '' and datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') > datetime.datetime.now():
+        #get Business Account ID if missing
+        if len(os.getenv('IG_BUSINESS_USER_ID')) == 0:
+            endpoint_url = 'https://graph.facebook.com/v19.0/me/accounts'
+            params = {
+                'fields': 'instagram_business_account{id,username}',
+                'access_token': os.getenv('ACCESS_TOKEN')
+            }
+            response = requests.get(endpoint_url, params=params)
 
-    #get Business Account ID if missing
-    if len(os.getenv('IG_BUSINESS_USER_ID')) == 0:
-        endpoint_url = 'https://graph.facebook.com/v19.0/me/accounts'
-        params = {
-            'fields': 'instagram_business_account{id,username}',
-            'access_token': os.getenv('ACCESS_TOKEN')
-        }
-        response = requests.get(endpoint_url, params=params)
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                # Parse the JSON response
+                ig_business_account = response.json()
+                os.environ['IG_BUSINESS_USER_ID'] = ig_business_account['data'][0]['instagram_business_account']['id']
+                dotenv.set_key('.env',"IG_BUSINESS_USER_ID", os.environ["IG_BUSINESS_USER_ID"])
+                print('Retrived Business Account ID: ' + os.getenv('IG_BUSINESS_USER_ID'))
+            else:
+                # Print the error message if the request was not successful
+                print("Error Update User ID:", response.text)
+                return None
 
-        # Check if the request was successful (status code 200)
-        if response.status_code == 200:
-            # Parse the JSON response
-            ig_business_account = response.json()
-            os.environ['IG_BUSINESS_USER_ID'] = ig_business_account['data'][0]['instagram_business_account']['id']
-            dotenv.set_key('.env',"IG_BUSINESS_USER_ID", os.environ["IG_BUSINESS_USER_ID"])
-            print('Retrived Business Account ID: ' + os.getenv('IG_BUSINESS_USER_ID'))
+        update_required = True
+
+        if os.getenv('IG_LAST_UPDATED') is None:
+            update_required = True
+        elif os.getenv('IG_LAST_UPDATED') == '':
+            update_required = True
+        elif (datetime.datetime.now() - datetime.datetime.strptime(os.getenv('IG_LAST_UPDATED'), '%Y-%m-%d %H:%M:%S.%f')). total_seconds() > 20:
+            update_required = True
         else:
-            # Print the error message if the request was not successful
-            print("Error Update User ID:", response.text)
-            return None
+            update_required = False
 
-    update_required = True
+        if update_required:
+            endpoint_url = 'https://graph.facebook.com/v19.0/' + os.getenv('IG_BUSINESS_USER_ID')
+            params = {
+                'fields': 'id,username,followers_count,follows_count,media_count',
+                'access_token': os.getenv('ACCESS_TOKEN')
+            }
+            # Send a GET request to the endpoint URL with the parameters
+            response = requests.get(endpoint_url, params=params)
 
-    if os.getenv('IG_LAST_UPDATED') is None:
-        update_required = True
-    elif os.getenv('IG_LAST_UPDATED') == '':
-        update_required = True
-    elif (datetime.datetime.now() - datetime.datetime.strptime(os.getenv('IG_LAST_UPDATED'), '%Y-%m-%d %H:%M:%S.%f')). total_seconds() > 20:
-        update_required = True
+            # Check if the request was successful (status code 200)
+            if response.status_code == 200:
+                # Parse the JSON response
+                account_details = response.json()
+                # Print the user's profile information
+                os.environ['IG_FOLLOWER_CHANGE'] = "None" if int(account_details['followers_count']) == int(os.environ['IG_FOLLOWERS_COUNT']) else "Increase" if int(account_details['followers_count']) > int(os.environ['IG_FOLLOWERS_COUNT']) else "Decrease"
+                os.environ['IG_FOLLOWERS_COUNT'] = str(account_details['followers_count'])
+                os.environ['IG_FOLLOWS_COUNT'] = str(account_details['follows_count'])
+                os.environ['IG_LAST_UPDATED'] = str(datetime.datetime.now())
+                dotenv.set_key('.env',"IG_FOLLOWER_CHANGE", os.environ["IG_FOLLOWER_CHANGE"])
+                dotenv.set_key('.env',"IG_FOLLOWERS_COUNT", os.environ["IG_FOLLOWERS_COUNT"])
+                dotenv.set_key('.env',"IG_FOLLOWS_COUNT", os.environ["IG_FOLLOWS_COUNT"])
+                dotenv.set_key('.env',"IG_LAST_UPDATED", os.environ["IG_LAST_UPDATED"])
+                print("Followers: " + os.environ['IG_FOLLOWERS_COUNT'] + "\nFollowing: " + os.environ['IG_FOLLOWS_COUNT'])
+            else:
+                # Print the error message if the request was not successful
+                print("Error Update IG Stats:", response.text)
+                return None
+
+        return "IG Stats Updated Successfully"
     else:
-        update_required = False
-
-    if update_required:
-        endpoint_url = 'https://graph.facebook.com/v19.0/' + os.getenv('IG_BUSINESS_USER_ID')
-        params = {
-            'fields': 'id,username,followers_count,follows_count,media_count',
-            'access_token': os.getenv('ACCESS_TOKEN')
-        }
-        # Send a GET request to the endpoint URL with the parameters
-        response = requests.get(endpoint_url, params=params)
-
-        # Check if the request was successful (status code 200)
-        if response.status_code == 200:
-            # Parse the JSON response
-            account_details = response.json()
-            # Print the user's profile information
-            os.environ['IG_FOLLOWER_CHANGE'] = "None" if int(account_details['followers_count']) == int(os.environ['IG_FOLLOWERS_COUNT']) else "Increase" if int(account_details['followers_count']) > int(os.environ['IG_FOLLOWERS_COUNT']) else "Decrease"
-            os.environ['IG_FOLLOWERS_COUNT'] = str(account_details['followers_count'])
-            os.environ['IG_FOLLOWS_COUNT'] = str(account_details['follows_count'])
-            os.environ['IG_LAST_UPDATED'] = str(datetime.datetime.now())
-            dotenv.set_key('.env',"IG_FOLLOWER_CHANGE", os.environ["IG_FOLLOWER_CHANGE"])
-            dotenv.set_key('.env',"IG_FOLLOWERS_COUNT", os.environ["IG_FOLLOWERS_COUNT"])
-            dotenv.set_key('.env',"IG_FOLLOWS_COUNT", os.environ["IG_FOLLOWS_COUNT"])
-            dotenv.set_key('.env',"IG_LAST_UPDATED", os.environ["IG_LAST_UPDATED"])
-            print("Followers: " + os.environ['IG_FOLLOWERS_COUNT'] + "\nFollowing: " + os.environ['IG_FOLLOWS_COUNT'])
-        else:
-            # Print the error message if the request was not successful
-            print("Error Update IG Stats:", response.text)
-            return None
-
-    return "IG Stats Updated Successfully"
+        return "No Valid Token"
 
 def get_weather():
     if os.getenv('WEATHER_LAST_UPDATED') is None or (datetime.datetime.now() - datetime.datetime.strptime(os.getenv('WEATHER_LAST_UPDATED'), '%Y-%m-%d %H:%M:%S.%f')). total_seconds() > 60:
@@ -190,24 +192,27 @@ def switch_to_instagram():
 def refresh_instagram():
     global screen_refresh_process
     try:
-        update_ig_stats()
-        instagram_followers.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))))
-        change = os.getenv('IG_FOLLOWER_CHANGE')
-        if change == "Increase":
-            # Alternate color every second between white and green
-            if instagram_followers.cget('fg') == 'white':
-                instagram_followers.configure(fg='#32CD32')
-            else:
-                instagram_followers.configure(fg='white')
-        elif change == "Decrease":
-            # Alternate color every second between white and red
-            if instagram_followers.cget('fg') == 'white':
-                instagram_followers.configure(fg='#FF6347')
-            else:
-                instagram_followers.configure(fg='white')
+        ig_stat_update = update_ig_stats()
+        if ig_stat_update == "No Valid Token":
+            instagram_followers.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT')))+" - Token Expired", font=(text_font,60))
         else:
-            # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
-            instagram_followers.configure(fg='white')
+            instagram_followers.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), font=(text_font, 125))
+            change = os.getenv('IG_FOLLOWER_CHANGE')
+            if change == "Increase":
+                # Alternate color every second between white and green
+                if instagram_followers.cget('fg') == 'white':
+                    instagram_followers.configure(fg='#32CD32')
+                else:
+                    instagram_followers.configure(fg='white')
+            elif change == "Decrease":
+                # Alternate color every second between white and red
+                if instagram_followers.cget('fg') == 'white':
+                    instagram_followers.configure(fg='#FF6347')
+                else:
+                    instagram_followers.configure(fg='white')
+            else:
+                # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
+                instagram_followers.configure(fg='white')
     except Exception as e:
         print("An error occured with update instagram page: ", e)
     screen_refresh_process = root.after(1000 * 1, refresh_instagram)
@@ -218,10 +223,10 @@ def switch_to_weather():
     root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     clear_page_transition()
-    weather_now_label.place(x=260, y=100, width=480, height=40)
+    weather_now_label.place(x=260, y=100, width=480, height=50)
     weather_now_temp.place(x=260, y=155, width=480, height=80)
     weather_now_conditions.place(x=260, y=235, width=480, height=80)
-    weather_future_label.place(x=760, y=100, width=480, height=40)
+    weather_future_label.place(x=760, y=100, width=480, height=50)
     weather_future_temp.place(x=760, y=155, width=480, height=80)
     weather_future_conditions.place(x=760, y=235, width=480, height=80)
     weather_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
