@@ -318,6 +318,7 @@ def clear_page_transition():
     carousel_stop_start_button.place_forget()
     close_window_button.place_forget()
     root.configure(bg="black")
+    instagram_button.config(state=tk.NORMAL) if instagram_button.cget("state") != tk.DISABLED else None
     settings_button.config(state=tk.NORMAL)
     clock_button.config(state=tk.NORMAL)
     weather_button.config(state=tk.NORMAL)
