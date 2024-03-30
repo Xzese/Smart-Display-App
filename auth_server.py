@@ -58,8 +58,10 @@ def exchange_code_for_token(code):
         expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=response.json()['expires_in'])
         os.environ['LONG_ACCESS_TOKEN'] = instagram_access_token
         os.environ['LONG_ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
+        os.environ['IG_BUSINESS_USER_ID'] = ''
         dotenv.set_key('.env',"LONG_ACCESS_TOKEN", instagram_access_token)
         dotenv.set_key('.env',"LONG_ACCESS_TOKEN_EXPIRY", str(expiry_date))
+        dotenv.set_key('.env',"IG_BUSINESS_USER_ID", os.environ['IG_BUSINESS_USER_ID'])
         return response.json()
     else:
         return 'Error: Failed to exchange authorization code for token'
@@ -75,6 +77,8 @@ def open_webbrowser(auth_url):
 
 def wait_for_token():
     global token_thread
+
+    token_acquired.clear()
     # Start server and server thread
     server, server_thread = run_server()
     token_acquired.wait()
@@ -88,6 +92,10 @@ def native_capture(auth_url):
     global token_thread
     token_thread = threading.Thread(target=open_webbrowser, args=(auth_url,))
     token_thread.start()
+
+def stop_server():
+    if not token_acquired.is_set():
+        token_acquired.set()
 
 if __name__ == "__main__":
     auth_url = get_auth_url()

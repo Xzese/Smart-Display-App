@@ -6,7 +6,7 @@ import datetime
 import tkinter as tk
 import qrcode
 import threading
-from auth_server import wait_for_token, get_auth_url, native_capture
+from auth_server import wait_for_token, get_auth_url, native_capture, stop_server
 from PIL import Image, ImageTk
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -302,6 +302,7 @@ def clear_page_transition():
     instagram_button.configure(bg="black")
     weather_button.configure(bg="black")
     refresh_token_button.configure(text="Refresh Token", command=refresh_token)
+    stop_server()
 
 def check_thread_status(thread):
     if thread.is_alive():
@@ -309,6 +310,7 @@ def check_thread_status(thread):
         root.after(1000, check_thread_status, thread)
     else:
         thread.join()
+        dotenv.load_dotenv()
         switch_to_clock()
 
 def refresh_token():
