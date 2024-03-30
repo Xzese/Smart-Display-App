@@ -4,9 +4,9 @@ import requests
 import dotenv
 import datetime
 import webbrowser
-import sys
-from flask import Flask, request
 import threading
+from flask import Flask, request
+from werkzeug.serving import make_server
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -64,16 +64,27 @@ def exchange_code_for_token(code):
         return 'Error: Failed to exchange authorization code for token'
 
 def run_server():
-    app.run(host=os.getenv('CLIENT_IP_ADDRESS'), debug=True, port=5000, ssl_context='adhoc')
+    server = make_server(os.getenv('CLIENT_IP_ADDRESS'), 5000, app, ssl_context="adhoc")
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.start()
+    return server, server_thread
 
 def acquire_token():
     webbrowser.open(get_access_code(), new=1, autoraise=True)
-    token_acquired.wait()  # Wait until the token is acquired
-    os._exit(0)  # Terminate the program immediately without cleanup
+    token_acquired.wait()
 
 def run_server_with_token_acquisition():
-    threading.Thread(target=acquire_token).start()
-    run_server()
+    # Start token acquisition thread
+    token_thread = threading.Thread(target=acquire_token)
+    token_thread.start()
+
+    # Start server and server thread
+    server, server_thread = run_server()
+
+    # Wait for token acquisition thread to complete
+    token_thread.join()
+    server.shutdown()
+    server_thread.join()
 
 if __name__ == "__main__":
     run_server_with_token_acquisition()
