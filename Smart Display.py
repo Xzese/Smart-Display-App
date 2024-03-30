@@ -15,15 +15,12 @@ dotenv.load_dotenv()
 
 def update_ig_stats(): 
 
-    access_token = os.getenv('ACCESS_TOKEN')
-    user_id = os.getenv('IG_BUSINESS_USER_ID')
-
     #get Business Account ID if missing
-    if len(user_id) == 0:
+    if len(os.getenv('IG_BUSINESS_USER_ID')) == 0:
         endpoint_url = 'https://graph.facebook.com/v19.0/me/accounts'
         params = {
             'fields': 'instagram_business_account{id,username}',
-            'access_token': access_token
+            'access_token': os.getenv('ACCESS_TOKEN')
         }
         response = requests.get(endpoint_url, params=params)
 
@@ -33,7 +30,6 @@ def update_ig_stats():
             ig_business_account = response.json()
             os.environ['IG_BUSINESS_USER_ID'] = ig_business_account['data'][0]['instagram_business_account']['id']
             dotenv.set_key('.env',"IG_BUSINESS_USER_ID", os.environ["IG_BUSINESS_USER_ID"])
-            user_id = os.getenv('IG_BUSINESS_USER_ID')
             print('Retrived Business Account ID: ' + os.getenv('IG_BUSINESS_USER_ID'))
         else:
             # Print the error message if the request was not successful
@@ -42,7 +38,9 @@ def update_ig_stats():
 
     update_required = True
 
-    if len(os.getenv('IG_LAST_UPDATED')) == 0:
+    if os.getenv('IG_LAST_UPDATED') is None:
+        update_required = True
+    elif os.getenv('IG_LAST_UPDATED') == '':
         update_required = True
     elif (datetime.datetime.now() - datetime.datetime.strptime(os.getenv('IG_LAST_UPDATED'), '%Y-%m-%d %H:%M:%S.%f')). total_seconds() > 20:
         update_required = True
@@ -50,10 +48,10 @@ def update_ig_stats():
         update_required = False
 
     if update_required:
-        endpoint_url = 'https://graph.facebook.com/v19.0/' + user_id
+        endpoint_url = 'https://graph.facebook.com/v19.0/' + os.getenv('IG_BUSINESS_USER_ID')
         params = {
             'fields': 'id,username,followers_count,follows_count,media_count',
-            'access_token': access_token
+            'access_token': os.getenv('ACCESS_TOKEN')
         }
         # Send a GET request to the endpoint URL with the parameters
         response = requests.get(endpoint_url, params=params)
