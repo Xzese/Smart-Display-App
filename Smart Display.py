@@ -194,7 +194,8 @@ def refresh_instagram():
     try:
         ig_stat_update = update_ig_stats()
         if ig_stat_update == "No Valid Token":
-            instagram_followers.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT')))+" - Token Expired", font=(text_font,60))
+            instagram_button.config(state=tk.DISABLED)
+            switch_to_clock()
         else:
             instagram_followers.configure(text="{:,}".format(int(os.getenv('IG_FOLLOWERS_COUNT'))), font=(text_font, 125))
             change = os.getenv('IG_FOLLOWER_CHANGE')
@@ -213,9 +214,9 @@ def refresh_instagram():
             else:
                 # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
                 instagram_followers.configure(fg='white')
+            screen_refresh_process = root.after(1000 * 1, refresh_instagram)
     except Exception as e:
         print("An error occured with update instagram page: ", e)
-    screen_refresh_process = root.after(1000 * 1, refresh_instagram)
 
 def switch_to_weather():
     global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
@@ -276,9 +277,9 @@ def switch_to_settings():
 def start_carousel():
     global current_screen
     try:
-        if current_screen == "Weather":
+        if current_screen == "Weather" and instagram_button.cget("state") != tk.DISABLED:
             switch_to_instagram()
-        elif current_screen == None or current_screen == "Instagram":
+        elif current_screen == None or current_screen == "Instagram" or (current_screen == "Weather" and instagram_button.cget("state") == tk.DISABLED):
             switch_to_clock()
         elif current_screen == "Clock":
             switch_to_weather()
@@ -317,6 +318,9 @@ def clear_page_transition():
     carousel_stop_start_button.place_forget()
     close_window_button.place_forget()
     root.configure(bg="black")
+    settings_button.config(state=tk.NORMAL)
+    clock_button.config(state=tk.NORMAL)
+    weather_button.config(state=tk.NORMAL)
     settings_button.configure(bg="black")
     clock_button.configure(bg="black")
     instagram_button.configure(bg="black")
@@ -331,6 +335,7 @@ def check_thread_status(thread):
     else:
         thread.join()
         dotenv.load_dotenv()
+        instagram_button.config(state=tk.NORMAL)
         switch_to_clock()
 
 def refresh_token():
@@ -416,12 +421,13 @@ total_vertical_spacing = vertical_margin_top + vertical_margin_bottom
 available_vertical_space = display_height - total_button_height - total_vertical_spacing
 vertical_spacing = available_vertical_space / (4 - 1)
 
+instagram_button_state = tk.DISABLED if update_ig_stats() == "No Valid Token" else tk.NORMAL
 close_window_button = tk.Button(root, text="Close App", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=on_closing, bd=1, highlightthickness=1)
 carousel_stop_start_button = tk.Button(root, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
 refresh_token_button = tk.Button(root, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
 settings_button = tk.Button(root, image=cog_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_settings, bd=0, highlightthickness=0)
 clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_clock, bd=0, highlightthickness=0)
-instagram_button = tk.Button(root, image=camera_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_instagram, bd=0, highlightthickness=0)
+instagram_button = tk.Button(root, image=camera_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_instagram, bd=0, highlightthickness=0, state=instagram_button_state)
 weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_weather, bd=0, highlightthickness=0)
 
 settings_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 0 + vertical_margin_top,width=button_size,height=button_size)
