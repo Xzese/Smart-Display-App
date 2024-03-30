@@ -15,6 +15,7 @@ dotenv.load_dotenv()
 app = Flask(__name__)
 
 token_acquired = threading.Event()
+token_thread = None
 
 @app.route('/')
 def index():
@@ -30,7 +31,7 @@ def callback():
     else:
         return 'Error: Code not received'
 
-def get_access_code():
+def get_auth_url():
     auth_url = 'https://www.facebook.com/v19.0/dialog/oauth'
     params = {
         'client_id': os.getenv('CLIENT_ID'),
@@ -69,22 +70,26 @@ def run_server():
     server_thread.start()
     return server, server_thread
 
-def acquire_token():
-    webbrowser.open(get_access_code(), new=1, autoraise=True)
-    token_acquired.wait()
+def open_webbrowser(auth_url):
+    webbrowser.open(auth_url, new=1, autoraise=True)
 
-def run_server_with_token_acquisition():
-    # Start token acquisition thread
-    token_thread = threading.Thread(target=acquire_token)
-    token_thread.start()
-
+def wait_for_token():
+    global token_thread
     # Start server and server thread
     server, server_thread = run_server()
+    token_acquired.wait()
 
     # Wait for token acquisition thread to complete
-    token_thread.join()
+    token_thread.join() if token_thread else None
     server.shutdown()
     server_thread.join()
 
+def native_capture(auth_url):
+    global token_thread
+    token_thread = threading.Thread(target=open_webbrowser, args=(auth_url,))
+    token_thread.start()
+
 if __name__ == "__main__":
-    run_server_with_token_acquisition()
+    auth_url = get_auth_url()
+    native_capture(auth_url)
+    wait_for_token()

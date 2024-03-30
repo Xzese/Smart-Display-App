@@ -4,7 +4,9 @@ import requests
 import dotenv
 import datetime
 import tkinter as tk
-from auth_server import run_server_with_token_acquisition
+import qrcode
+import threading
+from auth_server import wait_for_token, get_auth_url, native_capture
 from PIL import Image, ImageTk
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -131,7 +133,7 @@ def fit_image_to_widget(image_path, widget_width, widget_height):
         scale_factor = min(width_scale, height_scale)
         
         # Resize the image using the calculated scale factor
-        resized_image = image.resize((int(image_width * scale_factor), int(image_height * scale_factor)), Image.BILINEAR)
+        resized_image = image.resize((int(image_width * scale_factor), int(image_height * scale_factor)), Image.BICUBIC)
         
         # Convert the resized image to a Tkinter PhotoImage
         photo_image = ImageTk.PhotoImage(resized_image)
@@ -242,6 +244,27 @@ def refresh_weather():
         print("An error occured with update weather page: ", e)
     screen_refresh_process = root.after(1000*1, refresh_weather)
 
+def switch_to_settings():
+    global screen_refresh_process, current_screen, carousel_update_process
+    current_screen = "Settings"
+    root.after_cancel(carousel_update_process) if carousel_update_process else None
+    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
+    clear_page_transition()
+    root.configure(bg="#505050")
+    settings_button.configure(bg="#505050")
+    clock_button.configure(bg="#505050")
+    instagram_button.configure(bg="#505050")
+    weather_button.configure(bg="#505050")
+    settings_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+    settings_label.place(x=260, y=10, width=1000, height=100)
+    token_days_remaining = (datetime.datetime.strptime(os.getenv('LONG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days
+    if token_days_remaining >= 0:
+        token_label.configure(text="Token Has\n"+str(token_days_remaining)+" Days Remaining")
+    else:
+        token_label.configure(text="Token Has\n Expired", bg="black")
+    token_label.place(x=300, y=110, width=300, height=100)
+    refresh_token_button.place(x=350, y=210, width=200, height=50)
+
 def start_carousel():
     global current_screen
     try:
@@ -270,12 +293,49 @@ def clear_page_transition():
     clock_label.place_forget()
     weather_label.place_forget()
     instagram_label.place_forget()
+    token_label.place_forget()
+    refresh_token_button.place_forget()
+    qrcode_image_label.place_forget()
+    root.configure(bg="black")
+    settings_button.configure(bg="black")
+    clock_button.configure(bg="black")
+    instagram_button.configure(bg="black")
+    weather_button.configure(bg="black")
+    refresh_token_button.configure(text="Refresh Token", command=refresh_token)
 
-if datetime.datetime.strptime(os.getenv('LONG_ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') < datetime.datetime.now():
-    try:
-        run_server_with_token_acquisition()
-    except:
-        pass
+def check_thread_status(thread):
+    if thread.is_alive():
+        print("Waiting for Token")
+        root.after(1000, check_thread_status, thread)
+    else:
+        thread.join()
+        switch_to_clock()
+
+def refresh_token():
+    auth_url = get_auth_url()
+    qrcode_image = create_qrcode(auth_url)
+    refresh_token_button.configure(command=lambda: native_capture(auth_url), text="Open Browser")
+    qrcode_image_label.configure(image=qrcode_image)
+    qrcode_image_label.image = qrcode_image
+    qrcode_image_label.place(x=600, y=85, width=250, height=250)
+
+    token_thread = threading.Thread(target=wait_for_token)
+    token_thread.start()
+
+    root.after(1000, check_thread_status, token_thread)
+    
+def create_qrcode(auth_url):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=3.5,
+        border=1,
+    )
+    qr.add_data(auth_url)
+    qr.make(fit=True)
+    pil_image = qr.make_image(fill_color="black", back_color="white")
+    photo_image = ImageTk.PhotoImage(pil_image)
+    return photo_image
 
 root = tk.Tk()
 
@@ -288,6 +348,8 @@ root.title("Smart Display")
 root.attributes('-fullscreen', False if os.getenv('FULLSCREEN') == "false" else True)
 root.configure(bg="black", cursor="none")
 
+cog_image_large = fit_image_to_widget(os.path.join("images","Cog.png"),250,250)
+cog_image_small = fit_image_to_widget(os.path.join("images","Cog.png"),50,50)
 clock_image_large = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
 clock_image_small = fit_image_to_widget(os.path.join("images","Clock.png"),50,50)
 weather_image_large = fit_image_to_widget(os.path.join("images","Weather.png"),250,250)
@@ -295,9 +357,14 @@ weather_image_small = fit_image_to_widget(os.path.join("images","Weather.png"),5
 camera_image_large = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
 camera_image_small = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
 
+settings_logo = tk.Label(root, bg="#505050", fg="white", image=cog_image_large)
 clock_logo = tk.Label(root, bg="black", fg="white", image=clock_image_large)
 weather_logo = tk.Label(root, bg="black", fg="white", image=weather_image_large)
 camera_logo = tk.Label(root, bg="black", fg="white", image=camera_image_large)
+qrcode_image_label = tk.Label(root, bg="#505050", fg="#505050")
+
+settings_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 50), anchor="center", text="Settings")
+token_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has\nX Days Remaining")
 clock_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Time")
 weather_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Weather")
 instagram_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Followers")
@@ -311,13 +378,26 @@ weather_future_label = tk.Label(root, bg="black", fg="white", font=(text_font, 3
 weather_future_temp = tk.Label(root, bg="black", fg="white", font=(text_font, 70), anchor="center")
 weather_future_conditions = tk.Label(root, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
 
-clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_clock, bd=0, highlightthickness=0)
-instagram_button = tk.Button(root, image=camera_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_instagram, bd=0, highlightthickness=0)
-weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="black", width=50, height=50, command=switch_to_weather, bd=0, highlightthickness=0)
+vertical_margin_right = 10
+button_size = 50
+vertical_margin_top = 15
+vertical_margin_bottom = 15
 
-clock_button.place(x=display_width-50-10,y=30,width=50,height=50)
-instagram_button.place(x=display_width-50-10,y=(display_height-50)/2,width=50,height=50)
-weather_button.place(x=display_width-50-10,y=display_height-50-30,width=50,height=50)
+total_button_height = button_size * 4
+total_vertical_spacing = vertical_margin_top + vertical_margin_bottom
+available_vertical_space = display_height - total_button_height - total_vertical_spacing
+vertical_spacing = available_vertical_space / (4 - 1)
+
+refresh_token_button = tk.Button(root, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
+settings_button = tk.Button(root, image=cog_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_settings, bd=0, highlightthickness=0)
+clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_clock, bd=0, highlightthickness=0)
+instagram_button = tk.Button(root, image=camera_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_instagram, bd=0, highlightthickness=0)
+weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_weather, bd=0, highlightthickness=0)
+
+settings_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 0 + vertical_margin_top,width=button_size,height=button_size)
+clock_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 1 + vertical_margin_top,width=button_size,height=button_size)
+instagram_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 2 + vertical_margin_top,width=button_size,height=button_size)
+weather_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 3 + vertical_margin_top,width=button_size,height=button_size)
 
 page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
 
