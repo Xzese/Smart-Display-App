@@ -272,10 +272,19 @@ def carousel_stop_start():
     carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
     carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
 
+def page_transition_stop_start():
+    if os.getenv('PAGE_TRANSITION') == 'true':
+        os.environ['PAGE_TRANSITION'] = 'false'
+    else:
+        os.environ['PAGE_TRANSITION'] = 'true'
+    dotenv.set_key('.env',"PAGE_TRANSITION", os.environ['PAGE_TRANSITION'])
+    page_transition_start_stop_label.configure(text="Page Transitions\n are On" if os.getenv('PAGE_TRANSITION')=='true' else 'Page Transitions\n are Off')
+    page_transition_start_stop_button.configure(text="Stop" if os.getenv('PAGE_TRANSITION')=='true' else 'Start')
+
 def page_transition(old_screen, current_screen, transition=False):
     global page_widgets, carousel_update_process
 
-    if old_screen == current_screen or old_screen == None or old_screen == "Settings" or bool(os.getenv('PAGE_TRANSITION')):
+    if old_screen == current_screen or old_screen == None or old_screen == "Settings" or os.getenv('PAGE_TRANSITION') == 'false':
         transition = False
 
     root.after_cancel(carousel_update_process) if carousel_update_process else None
@@ -345,7 +354,7 @@ def refresh_token():
     refresh_token_button.configure(command=lambda: native_capture(auth_url), text="Open Browser")
     qrcode_image_label.configure(image=qrcode_image)
     qrcode_image_label.image = qrcode_image
-    qrcode_image_label.place(x=775, y=85, width=250, height=250)
+    qrcode_image_label.place(x=1000, y=85, width=250, height=250)
 
     token_thread = threading.Thread(target=wait_for_token)
     token_thread.start()
@@ -399,6 +408,7 @@ qrcode_image_label = tk.Label(root, bg="#505050", fg="#505050")
 settings_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 50), anchor="center", text="Settings")
 token_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has\nX Days Remaining")
 carousel_stop_start_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Carousel is\nRunning")
+page_transition_start_stop_label = tk.Label(root, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Page Transitions\n are On")
 clock_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Time")
 weather_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Weather")
 instagram_label = tk.Label(root, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Followers")
@@ -425,6 +435,7 @@ vertical_spacing = available_vertical_space / (4 - 1)
 instagram_button_state = tk.DISABLED if update_ig_stats() == "No Valid Token" else tk.NORMAL
 close_window_button = tk.Button(root, text="Close App", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=on_closing, bd=1, highlightthickness=1)
 carousel_stop_start_button = tk.Button(root, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
+page_transition_start_stop_button = tk.Button(root, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_stop_start, bd=1, highlightthickness=1)
 refresh_token_button = tk.Button(root, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
 settings_button = tk.Button(root, image=cog_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_settings, bd=0, highlightthickness=0)
 clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_clock, bd=0, highlightthickness=0)
@@ -464,8 +475,10 @@ page_widgets = {
         {'widget': close_window_button, 'width': 200, 'height': 50, 'x': 300, 'y': 35},
         {'widget': carousel_stop_start_label, 'width': 200, 'height': 100, 'x': 300, 'y': 110},
         {'widget': carousel_stop_start_button, 'width': 100, 'height': 50, 'x': 350, 'y': 210},
-        {'widget': token_label, 'width': 300, 'height': 100, 'x': 500, 'y': 110},
-        {'widget': refresh_token_button, 'width': 200, 'height': 50, 'x': 550, 'y': 210}
+        {'widget': token_label, 'width': 300, 'height': 100, 'x': 725, 'y': 110},
+        {'widget': refresh_token_button, 'width': 200, 'height': 50, 'x': 775, 'y': 210},
+        {'widget': page_transition_start_stop_label, 'width': 250, 'height': 100, 'x': 500, 'y': 110},
+        {'widget': page_transition_start_stop_button, 'width': 100, 'height': 50, 'x': 575, 'y': 210}
     ]
 }
 
