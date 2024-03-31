@@ -162,6 +162,7 @@ def switch_to_clock():
     old_screen = current_screen
     current_screen = "Clock"
     old_screen_refresh_process = screen_refresh_process
+    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process and old_screen != "Clock" else None
     page_transition(old_screen, current_screen, True)
     refresh_clock()
     
@@ -179,6 +180,7 @@ def switch_to_instagram():
     old_screen = current_screen
     current_screen = "Instagram"
     old_screen_refresh_process = screen_refresh_process
+    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process and old_screen != "Clock" else None
     page_transition(old_screen, current_screen, True)
     refresh_instagram()
 
@@ -216,6 +218,7 @@ def switch_to_weather():
     old_screen = current_screen
     current_screen = "Weather"
     old_screen_refresh_process = screen_refresh_process
+    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process and old_screen != "Clock" else None
     page_transition(old_screen, current_screen, True)
     refresh_weather()
     
@@ -282,12 +285,20 @@ def page_transition_stop_start():
     page_transition_start_stop_button.configure(text="Stop" if os.getenv('PAGE_TRANSITION')=='true' else 'Start')
 
 def page_transition(old_screen, current_screen, transition=False):
-    global page_widgets, carousel_update_process
+    global carousel_update_process, active_transition
 
+    root.after_cancel(active_transition) if active_transition else None
+    root.after_cancel(carousel_update_process) if carousel_update_process else None
     if old_screen == current_screen or old_screen == None or old_screen == "Settings" or os.getenv('PAGE_TRANSITION') == 'false':
         transition = False
 
-    root.after_cancel(carousel_update_process) if carousel_update_process else None
+    if old_screen is not None:
+        pages = list(page_widgets.keys())
+        if old_screen in pages: pages.remove(old_screen)
+        if current_screen in pages: pages.remove(current_screen)
+        for page in pages:
+            for item in page_widgets[page]:
+                item['widget'].place_forget() 
 
     instagram_button.config(state=tk.NORMAL) if instagram_button.cget("state") != tk.DISABLED else None
     settings_button.config(state=tk.NORMAL)
@@ -320,24 +331,28 @@ def page_transition(old_screen, current_screen, transition=False):
             refresh_token_button.configure(text="Refresh Token", command=refresh_token)
             qrcode_image_label.place_forget()
             stop_server()
-        animate_transition(old_screen, current_screen, 0)
+        active_transition = animate_transition(old_screen, current_screen, 0)
 
 def animate_transition(old_screen, current_screen, offset):
-    global carousel_update_process, old_screen_refresh_process
+    global carousel_update_process, old_screen_refresh_process, active_transition
     if offset > display_height:
-        if old_screen is not None:
-            for item in page_widgets[old_screen]:
-                item['widget'].place_forget() 
-        root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process else None
-        carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
+        forget_old_screen(old_screen)
     else:
         if old_screen is not None:
             for item in page_widgets[old_screen]:
                 item['widget'].place(x=item['x'], y=item['y']-offset, width=item['width'], height=item['height'])
         for item in page_widgets[current_screen]:
             item['widget'].place(x=item['x'], y=item['y']+display_height-offset, width=item['width'], height=item['height'])
-        root.after(20, animate_transition, old_screen, current_screen, offset + 2)
-        
+        active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 2)
+
+def forget_old_screen(old_screen):
+    global carousel_update_process, old_screen_refresh_process
+    if old_screen is not None:
+        for item in page_widgets[old_screen]:
+            item['widget'].place_forget() 
+    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process else None
+    carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
+
 def check_thread_status(thread):
     if thread.is_alive():
         print("Waiting for Token")
@@ -486,6 +501,7 @@ carousel_update_process = None
 old_screen_refresh_process = None
 screen_refresh_process = None
 current_screen = None
+active_transition = None
 initialize_environment()
 
 start_carousel()
