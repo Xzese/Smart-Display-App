@@ -153,21 +153,18 @@ def initialize_environment():
     if os.getenv('CAROUSEL') is None:
         os.environ['CAROUSEL'] = 'true'
         dotenv.set_key('.env',"CAROUSEL", os.environ["CAROUSEL"])
-    return int(os.getenv('PAGE_TRANSITION_TIME')), None, None, None
+    if os.getenv('PAGE_TRANSITION') is None:
+        os.environ['PAGE_TRANSITION'] = 'true'
+        dotenv.set_key('.env',"PAGE_TRANSITION", os.environ["PAGE_TRANSITION"])
 
 def switch_to_clock():
-    global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
+    global screen_refresh_process, old_screen_refresh_process, current_screen
+    old_screen = current_screen
     current_screen = "Clock"
-    root.after_cancel(carousel_update_process) if carousel_update_process else None
-    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    clear_page_transition()
-    clock_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
-    clock_label.place(x=260, y=10, width=1000, height=100)
-    clock_time.place(x=260+20, y=100, width=920, height=200)
-    clock_date.place(x=1160, y=100, width=180, height=200)
+    old_screen_refresh_process = screen_refresh_process
+    page_transition(old_screen, current_screen, True)
     refresh_clock()
-    carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
-
+    
 def refresh_clock():
     global screen_refresh_process
     try:
@@ -178,16 +175,12 @@ def refresh_clock():
     screen_refresh_process = root.after(500, refresh_clock)
 
 def switch_to_instagram():
-    global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
+    global screen_refresh_process, old_screen_refresh_process, current_screen
+    old_screen = current_screen
     current_screen = "Instagram"
-    root.after_cancel(carousel_update_process) if carousel_update_process else None
-    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    clear_page_transition()
-    camera_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
-    instagram_label.place(x=260, y=10, width=1000, height=100)
-    instagram_followers.place(x=280, y=100, width=960, height=200)
+    old_screen_refresh_process = screen_refresh_process
+    page_transition(old_screen, current_screen, True)
     refresh_instagram()
-    carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
 def refresh_instagram():
     global screen_refresh_process
@@ -219,22 +212,13 @@ def refresh_instagram():
         print("An error occured with update instagram page: ", e)
 
 def switch_to_weather():
-    global screen_refresh_process, current_screen, carousel_update_process, page_transition_time
+    global screen_refresh_process, old_screen_refresh_process, current_screen
+    old_screen = current_screen
     current_screen = "Weather"
-    root.after_cancel(carousel_update_process) if carousel_update_process else None
-    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    clear_page_transition()
-    weather_now_label.place(x=260, y=100, width=480, height=50)
-    weather_now_temp.place(x=260, y=155, width=480, height=80)
-    weather_now_conditions.place(x=260, y=235, width=480, height=80)
-    weather_future_label.place(x=760, y=100, width=480, height=50)
-    weather_future_temp.place(x=760, y=155, width=480, height=80)
-    weather_future_conditions.place(x=760, y=235, width=480, height=80)
-    weather_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
-    weather_label.place(x=260, y=10, width=1000, height=100)
+    old_screen_refresh_process = screen_refresh_process
+    page_transition(old_screen, current_screen, True)
     refresh_weather()
-    carousel_update_process = root.after(1000 * page_transition_time, start_carousel) if os.getenv('CAROUSEL') != "false" else None
-
+    
 def refresh_weather():
     global screen_refresh_process
     try:
@@ -249,18 +233,16 @@ def refresh_weather():
     screen_refresh_process = root.after(1000*1, refresh_weather)
 
 def switch_to_settings():
-    global screen_refresh_process, current_screen, carousel_update_process
+    global screen_refresh_process, current_screen
+    old_screen = current_screen
     current_screen = "Settings"
-    root.after_cancel(carousel_update_process) if carousel_update_process else None
     root.after_cancel(screen_refresh_process) if screen_refresh_process else None
-    clear_page_transition()
+    page_transition(old_screen, current_screen, False)
     root.configure(bg="#505050")
     settings_button.configure(bg="#505050")
     clock_button.configure(bg="#505050")
     instagram_button.configure(bg="#505050")
     weather_button.configure(bg="#505050")
-    settings_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
-    settings_label.place(x=260, y=10, width=1000, height=100)
     token_days_remaining = (datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days
     if token_days_remaining >= 0:
         token_label.configure(text="Token Has\n"+str(token_days_remaining)+" Days Remaining")
@@ -268,11 +250,6 @@ def switch_to_settings():
         token_label.configure(text="Token Has\n Expired")
     carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
     carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
-    close_window_button.place(x=300, y=35, width=200, height=50)
-    carousel_stop_start_label.place(x=300, y=110, width=200, height=100)
-    carousel_stop_start_button.place(x=350, y=210, width=100, height=50)
-    token_label.place(x=500, y=110, width=300, height=100)
-    refresh_token_button.place(x=550, y=210, width=200, height=50)
 
 def start_carousel():
     global current_screen
@@ -295,40 +272,63 @@ def carousel_stop_start():
     carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
     carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
 
-def clear_page_transition():
-    instagram_followers.place_forget()
-    clock_time.place_forget()
-    clock_date.place_forget()
-    weather_now_temp.place_forget()
-    weather_now_conditions.place_forget()
-    weather_future_temp.place_forget()
-    weather_future_conditions.place_forget()
-    weather_now_label.place_forget()
-    weather_future_label.place_forget()
-    clock_logo.place_forget() 
-    weather_logo.place_forget()
-    camera_logo.place_forget()
-    clock_label.place_forget()
-    weather_label.place_forget()
-    instagram_label.place_forget()
-    token_label.place_forget()
-    refresh_token_button.place_forget()
-    qrcode_image_label.place_forget()
-    carousel_stop_start_label.place_forget()
-    carousel_stop_start_button.place_forget()
-    close_window_button.place_forget()
-    root.configure(bg="black")
+def page_transition(old_screen, current_screen, transition=False):
+    global page_widgets, carousel_update_process
+
+    if old_screen == current_screen or old_screen == None or old_screen == "Settings" or bool(os.getenv('PAGE_TRANSITION')):
+        transition = False
+
+    root.after_cancel(carousel_update_process) if carousel_update_process else None
+
     instagram_button.config(state=tk.NORMAL) if instagram_button.cget("state") != tk.DISABLED else None
     settings_button.config(state=tk.NORMAL)
     clock_button.config(state=tk.NORMAL)
     weather_button.config(state=tk.NORMAL)
-    settings_button.configure(bg="black")
-    clock_button.configure(bg="black")
-    instagram_button.configure(bg="black")
-    weather_button.configure(bg="black")
-    refresh_token_button.configure(text="Refresh Token", command=refresh_token)
-    stop_server()
 
+    if not transition:
+        if old_screen is not None:
+            for item in page_widgets[old_screen]:
+                item['widget'].place_forget()
+            if old_screen == "Settings":
+                root.configure(bg="black")
+                settings_button.configure(bg="black")
+                clock_button.configure(bg="black")
+                instagram_button.configure(bg="black")
+                weather_button.configure(bg="black")
+                refresh_token_button.configure(text="Refresh Token", command=refresh_token)
+                qrcode_image_label.place_forget()
+                stop_server()
+        for item in page_widgets[current_screen]:
+            item['widget'].place(x=item['x'], y=item['y'], width=item['width'], height=item['height'])
+        carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
+    elif transition:
+        if old_screen == "Settings":
+            root.configure(bg="black")
+            settings_button.configure(bg="black")
+            clock_button.configure(bg="black")
+            instagram_button.configure(bg="black")
+            weather_button.configure(bg="black")
+            refresh_token_button.configure(text="Refresh Token", command=refresh_token)
+            qrcode_image_label.place_forget()
+            stop_server()
+        animate_transition(old_screen, current_screen, 0)
+
+def animate_transition(old_screen, current_screen, offset):
+    global carousel_update_process, old_screen_refresh_process
+    if offset > display_height:
+        if old_screen is not None:
+            for item in page_widgets[old_screen]:
+                item['widget'].place_forget() 
+        root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process else None
+        carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
+    else:
+        if old_screen is not None:
+            for item in page_widgets[old_screen]:
+                item['widget'].place(x=item['x'], y=item['y']-offset, width=item['width'], height=item['height'])
+        for item in page_widgets[current_screen]:
+            item['widget'].place(x=item['x'], y=item['y']+display_height-offset, width=item['width'], height=item['height'])
+        root.after(20, animate_transition, old_screen, current_screen, offset + 2)
+        
 def check_thread_status(thread):
     if thread.is_alive():
         print("Waiting for Token")
@@ -436,7 +436,44 @@ clock_button.place(x=display_width-button_size-vertical_margin_right,y=(button_s
 instagram_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 2 + vertical_margin_top,width=button_size,height=button_size)
 weather_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 3 + vertical_margin_top,width=button_size,height=button_size)
 
-page_transition_time, screen_refresh_process, carousel_update_process, current_screen = initialize_environment()
+page_widgets = {
+    'Clock': [
+        {'widget': clock_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
+        {'widget': clock_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10},
+        {'widget': clock_time, 'width': 920, 'height': 200, 'x': 280, 'y': 100},
+        {'widget': clock_date, 'width': 180, 'height': 200, 'x': 1160, 'y': 100}
+    ],
+    'Instagram': [
+        {'widget': camera_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
+        {'widget': instagram_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10},
+        {'widget': instagram_followers, 'width': 960, 'height': 200, 'x': 280, 'y': 100}
+    ],
+    'Weather': [
+        {'widget': weather_now_label, 'width': 480, 'height': 50, 'x': 260, 'y': 100},
+        {'widget': weather_now_temp, 'width': 480, 'height': 80, 'x': 260, 'y': 155},
+        {'widget': weather_now_conditions, 'width': 480, 'height': 80, 'x': 260, 'y': 235},
+        {'widget': weather_future_label, 'width': 480, 'height': 50, 'x': 760, 'y': 100},
+        {'widget': weather_future_temp, 'width': 480, 'height': 80, 'x': 760, 'y': 155},
+        {'widget': weather_future_conditions, 'width': 480, 'height': 80, 'x': 760, 'y': 235},
+        {'widget': weather_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
+        {'widget': weather_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10}
+    ],
+    'Settings': [
+        {'widget': settings_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
+        {'widget': settings_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10},
+        {'widget': close_window_button, 'width': 200, 'height': 50, 'x': 300, 'y': 35},
+        {'widget': carousel_stop_start_label, 'width': 200, 'height': 100, 'x': 300, 'y': 110},
+        {'widget': carousel_stop_start_button, 'width': 100, 'height': 50, 'x': 350, 'y': 210},
+        {'widget': token_label, 'width': 300, 'height': 100, 'x': 500, 'y': 110},
+        {'widget': refresh_token_button, 'width': 200, 'height': 50, 'x': 550, 'y': 210}
+    ]
+}
+
+carousel_update_process = None
+old_screen_refresh_process = None
+screen_refresh_process = None
+current_screen = None
+initialize_environment()
 
 start_carousel()
 
