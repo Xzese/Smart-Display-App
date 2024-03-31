@@ -158,34 +158,31 @@ def initialize_environment():
         dotenv.set_key('.env',"PAGE_TRANSITION", os.environ["PAGE_TRANSITION"])
 
 def switch_to_clock():
-    global screen_refresh_process, old_screen_refresh_process, current_screen
+    global clock_refresh_process, current_screen
     old_screen = current_screen
     current_screen = "Clock"
-    old_screen_refresh_process = screen_refresh_process
-    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process and old_screen != "Clock" else None
     page_transition(old_screen, current_screen, True)
     refresh_clock()
     
 def refresh_clock():
-    global screen_refresh_process
+    global clock_refresh_process
     try:
         clock_date.configure(text=datetime.datetime.now().strftime("%d\n%b"))
         clock_time.configure(text=datetime.datetime.now().strftime("%H:%M:%S"),fg="white")
     except Exception as e:
         print("An error occured with update clock page: ", e)
-    screen_refresh_process = root.after(500, refresh_clock)
+    root.after_cancel(clock_refresh_process) if clock_refresh_process else None
+    clock_refresh_process = root.after(500, refresh_clock)
 
 def switch_to_instagram():
-    global screen_refresh_process, old_screen_refresh_process, current_screen
+    global instagram_refresh_process, current_screen
     old_screen = current_screen
     current_screen = "Instagram"
-    old_screen_refresh_process = screen_refresh_process
-    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process and old_screen != "Clock" else None
     page_transition(old_screen, current_screen, True)
     refresh_instagram()
 
 def refresh_instagram():
-    global screen_refresh_process
+    global instagram_refresh_process
     try:
         ig_stat_update = update_ig_stats()
         if ig_stat_update == "No Valid Token":
@@ -209,21 +206,20 @@ def refresh_instagram():
             else:
                 # Reset to default color (white) if the environment variable is not set to "Increase" or "Decrease"
                 instagram_followers.configure(fg='white')
-            screen_refresh_process = root.after(1000 * 1, refresh_instagram)
     except Exception as e:
         print("An error occured with update instagram page: ", e)
+    root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
+    instagram_refresh_process = root.after(1000 * 1, refresh_instagram)
 
 def switch_to_weather():
-    global screen_refresh_process, old_screen_refresh_process, current_screen
+    global weather_refresh_process, current_screen
     old_screen = current_screen
     current_screen = "Weather"
-    old_screen_refresh_process = screen_refresh_process
-    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process and old_screen != "Clock" else None
     page_transition(old_screen, current_screen, True)
     refresh_weather()
     
 def refresh_weather():
-    global screen_refresh_process
+    global weather_refresh_process
     try:
         get_weather()
         weather_now_temp.configure(text=str(os.getenv('WEATHER_NOW_TEMP'))+"°C")
@@ -233,13 +229,13 @@ def refresh_weather():
         weather_future_label.configure(text=str(os.getenv('WEATHER_FUTURE_TIME')))
     except Exception as e:
         print("An error occured with update weather page: ", e)
-    screen_refresh_process = root.after(1000*1, refresh_weather)
+    root.after_cancel(weather_refresh_process) if weather_refresh_process else None
+    weather_refresh_process = root.after(1000*1, refresh_weather)
 
 def switch_to_settings():
-    global screen_refresh_process, current_screen
+    global current_screen
     old_screen = current_screen
     current_screen = "Settings"
-    root.after_cancel(screen_refresh_process) if screen_refresh_process else None
     page_transition(old_screen, current_screen, False)
     root.configure(bg="#505050")
     settings_button.configure(bg="#505050")
@@ -292,8 +288,19 @@ def page_transition(old_screen, current_screen, transition=False):
     if old_screen == current_screen or old_screen == None or old_screen == "Settings" or os.getenv('PAGE_TRANSITION') == 'false':
         transition = False
 
-    if old_screen is not None:
+    if old_screen is not None and old_screen != current_screen:
         pages = list(page_widgets.keys())
+        if current_screen == "Settings":
+            root.after_cancel(clock_refresh_process) if clock_refresh_process else None
+            root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
+            root.after_cancel(weather_refresh_process) if weather_refresh_process else None
+        elif old_screen == "Clock" and current_screen == "Instagram" or old_screen == "Instagram" and current_screen == "Clock":
+            root.after_cancel(weather_refresh_process) if weather_refresh_process else None
+        elif old_screen == "Clock" and current_screen == "Weather" or old_screen == "Weather" and current_screen == "Clock":
+            root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
+        elif old_screen == "Instagram" and current_screen == "Weather" or old_screen == "Weather" and current_screen == "Instagram":
+            root.after_cancel(clock_refresh_process) if clock_refresh_process else None
+        
         if old_screen in pages: pages.remove(old_screen)
         if current_screen in pages: pages.remove(current_screen)
         for page in pages:
@@ -334,23 +341,29 @@ def page_transition(old_screen, current_screen, transition=False):
         active_transition = animate_transition(old_screen, current_screen, 0)
 
 def animate_transition(old_screen, current_screen, offset):
-    global carousel_update_process, old_screen_refresh_process, active_transition
+    global carousel_update_process, active_transition
     if offset > display_height:
         forget_old_screen(old_screen)
-    else:
+    elif offset == 0:
         if old_screen is not None:
             for item in page_widgets[old_screen]:
                 item['widget'].place(x=item['x'], y=item['y']-offset, width=item['width'], height=item['height'])
         for item in page_widgets[current_screen]:
             item['widget'].place(x=item['x'], y=item['y']+display_height-offset, width=item['width'], height=item['height'])
-        active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 2)
+        active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 3)
+    else:
+        if old_screen is not None:
+            for item in page_widgets[old_screen]:
+                item['widget'].place_configure(y=item['y']-offset)
+        for item in page_widgets[current_screen]:
+            item['widget'].place_configure(y=item['y']+display_height-offset)
+        active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 3)
 
 def forget_old_screen(old_screen):
-    global carousel_update_process, old_screen_refresh_process
+    global carousel_update_process
     if old_screen is not None:
         for item in page_widgets[old_screen]:
             item['widget'].place_forget() 
-    root.after_cancel(old_screen_refresh_process) if old_screen_refresh_process else None
     carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
 def check_thread_status(thread):
@@ -498,8 +511,9 @@ page_widgets = {
 }
 
 carousel_update_process = None
-old_screen_refresh_process = None
-screen_refresh_process = None
+clock_refresh_process = None
+instagram_refresh_process = None
+weather_refresh_process = None
 current_screen = None
 active_transition = None
 initialize_environment()
