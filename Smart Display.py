@@ -172,7 +172,7 @@ def refresh_clock():
     except Exception as e:
         print("An error occured with update clock page: ", e)
     root.after_cancel(clock_refresh_process) if clock_refresh_process else None
-    clock_refresh_process = root.after(500, refresh_clock)
+    clock_refresh_process = root.after(1000, refresh_clock)
 
 def switch_to_instagram():
     global instagram_refresh_process, current_screen
@@ -182,7 +182,7 @@ def switch_to_instagram():
     refresh_instagram()
 
 def refresh_instagram():
-    global instagram_refresh_process
+    global instagram_refresh_process, current_screen
     try:
         ig_stat_update = update_ig_stats()
         if ig_stat_update == "No Valid Token":
@@ -209,7 +209,8 @@ def refresh_instagram():
     except Exception as e:
         print("An error occured with update instagram page: ", e)
     root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
-    instagram_refresh_process = root.after(1000 * 1, refresh_instagram)
+    if current_screen == "Instagram":
+        instagram_refresh_process = root.after(1000 * 20, refresh_instagram)
 
 def switch_to_weather():
     global weather_refresh_process, current_screen
@@ -219,7 +220,7 @@ def switch_to_weather():
     refresh_weather()
     
 def refresh_weather():
-    global weather_refresh_process
+    global weather_refresh_process, current_screen
     try:
         get_weather()
         weather_now_temp.configure(text=str(os.getenv('WEATHER_NOW_TEMP'))+"°C")
@@ -230,7 +231,8 @@ def refresh_weather():
     except Exception as e:
         print("An error occured with update weather page: ", e)
     root.after_cancel(weather_refresh_process) if weather_refresh_process else None
-    weather_refresh_process = root.after(1000*1, refresh_weather)
+    if current_screen == "Weather":
+        weather_refresh_process = root.after(1000*60, refresh_weather)
 
 def switch_to_settings():
     global current_screen
@@ -294,11 +296,11 @@ def page_transition(old_screen, current_screen, transition=False):
             root.after_cancel(clock_refresh_process) if clock_refresh_process else None
             root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
             root.after_cancel(weather_refresh_process) if weather_refresh_process else None
-        elif old_screen == "Clock" and current_screen == "Instagram" or old_screen == "Instagram" and current_screen == "Clock":
+        elif (old_screen == "Clock" and current_screen == "Instagram") or (old_screen == "Instagram" and current_screen == "Clock"):
             root.after_cancel(weather_refresh_process) if weather_refresh_process else None
-        elif old_screen == "Clock" and current_screen == "Weather" or old_screen == "Weather" and current_screen == "Clock":
+        elif (old_screen == "Clock" and current_screen == "Weather") or (old_screen == "Weather" and current_screen == "Clock"):
             root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
-        elif old_screen == "Instagram" and current_screen == "Weather" or old_screen == "Weather" and current_screen == "Instagram":
+        elif (old_screen == "Instagram" and current_screen == "Weather") or (old_screen == "Weather" and current_screen == "Instagram"):
             root.after_cancel(clock_refresh_process) if clock_refresh_process else None
         
         if old_screen in pages: pages.remove(old_screen)
