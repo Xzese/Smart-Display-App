@@ -6,6 +6,7 @@ import datetime
 import tkinter as tk
 import qrcode
 import threading
+import socket
 from auth_server import wait_for_token, get_auth_url, native_capture, stop_server
 from PIL import Image, ImageTk
 
@@ -257,6 +258,10 @@ def switch_to_settings():
     clock_button.configure(bg="#505050")
     instagram_button.configure(bg="#505050")
     weather_button.configure(bg="#505050")
+    try:
+        ip_address_label.configure(text="IP Address: "+str(get_local_ip()))
+    except:
+        ip_address_label.configure(text="IP Address is Unavailable")
     token_days_remaining = (datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days
     if token_days_remaining >= 0:
         token_label.configure(text="Token Has\n"+str(token_days_remaining)+" Days Remaining")
@@ -425,8 +430,23 @@ def on_closing():
     print("Window is closing...")
     root.destroy()
 
-# Create and set variables
+def get_local_ip():
+    # Create a socket object
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    try:
+        # Connect to an external server (Google's DNS server)
+        s.connect(("8.8.8.8", 80))
+        # Get the local IP address
+        local_ip = s.getsockname()[0]
+    except Exception as e:
+        print("Error:", e)
+        local_ip = None
+    finally:
+        s.close()  # Close the socket
+    return local_ip
 
+# Create and set variables
 initialize_environment()
 carousel_update_process = None
 clock_refresh_process = None
@@ -537,6 +557,8 @@ page_transition_start_stop_label.place(x=500, y=110, width=250, height=100)
 page_transition_start_stop_button = tk.Button(settings_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_stop_start, bd=1, highlightthickness=1)
 page_transition_start_stop_button.place(x=575, y=210, width=100, height=50)
 qrcode_image_label = tk.Label(settings_frame, bg="#505050", fg="#505050")
+ip_address_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 14), anchor="center")
+ip_address_label.place(x=750 , y=270, width=250, height=50)
 
 page_frames = {
     'Clock': [
