@@ -369,14 +369,14 @@ def animate_transition(old_screen, current_screen, offset):
                 item['frame'].place(x=item['x'], y=item['y']-offset, width=item['width'], height=item['height'])
         for item in page_frames[current_screen]:
             item['frame'].place(x=item['x'], y=item['y']+display_height-offset, width=item['width'], height=item['height'])
-        active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 3)
+        active_transition = root.after(15, animate_transition, old_screen, current_screen, offset + 2)
     else:
         if old_screen is not None:
             for item in page_frames[old_screen]:
                 item['frame'].place_configure(y=item['y']-offset)
         for item in page_frames[current_screen]:
             item['frame'].place_configure(y=item['y']+display_height-offset)
-        active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 3)
+        active_transition = root.after(15, animate_transition, old_screen, current_screen, offset + 2)
 
 def forget_old_screen():
     global carousel_update_process, old_screen
