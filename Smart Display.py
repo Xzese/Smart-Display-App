@@ -156,6 +156,15 @@ def initialize_environment():
     if os.getenv('PAGE_TRANSITION') is None:
         os.environ['PAGE_TRANSITION'] = 'true'
         dotenv.set_key('.env',"PAGE_TRANSITION", os.environ["PAGE_TRANSITION"])
+    if os.getenv('TEXT_FONT') is None:
+        os.environ['TEXT_FONT'] = 'Arial Rounded MT Bold'
+        dotenv.set_key('.env',"TEXT_FONT", os.environ["TEXT_FONT"])
+    if os.getenv('DISPLAY_WIDTH') is None:
+        os.environ['DISPLAY_WIDTH'] = '1480'
+        dotenv.set_key('.env',"DISPLAY_WIDTH", os.environ["DISPLAY_WIDTH"])
+    if os.getenv('DISPLAY_HEIGHT') is None:
+        os.environ['DISPLAY_HEIGHT'] = '320'
+        dotenv.set_key('.env',"DISPLAY_HEIGHT", os.environ["DISPLAY_HEIGHT"])
 
 def switch_to_clock():
     global clock_refresh_process, current_screen, old_screen
@@ -243,6 +252,7 @@ def switch_to_settings():
     current_screen = "Settings"
     page_transition(old_screen, current_screen, False)
     root.configure(bg="#505050")
+    settings_frame.configure(bg="#505050")
     settings_button.configure(bg="#505050")
     clock_button.configure(bg="#505050")
     instagram_button.configure(bg="#505050")
@@ -294,7 +304,7 @@ def page_transition(old_screen, current_screen, transition=False):
         transition = False
 
     if old_screen is not None and old_screen != current_screen:
-        pages = list(page_widgets.keys())
+        pages = list(page_frames.keys())
         if current_screen == "Settings":
             root.after_cancel(clock_refresh_process) if clock_refresh_process else None
             root.after_cancel(instagram_refresh_process) if instagram_refresh_process else None
@@ -309,8 +319,8 @@ def page_transition(old_screen, current_screen, transition=False):
         if old_screen in pages: pages.remove(old_screen)
         if current_screen in pages: pages.remove(current_screen)
         for page in pages:
-            for item in page_widgets[page]:
-                item['widget'].place_forget() 
+            for item in page_frames[page]:
+                item['frame'].place_forget() 
 
     instagram_button.config(state=tk.NORMAL) if instagram_button.cget("state") != tk.DISABLED else None
     settings_button.config(state=tk.NORMAL)
@@ -319,10 +329,11 @@ def page_transition(old_screen, current_screen, transition=False):
 
     if not transition:
         if old_screen is not None:
-            for item in page_widgets[old_screen]:
-                item['widget'].place_forget()
+            for item in page_frames[old_screen]:
+                item['frame'].place_forget()
             if old_screen == "Settings":
                 root.configure(bg="black")
+                settings_frame.configure(bg="black")
                 settings_button.configure(bg="black")
                 clock_button.configure(bg="black")
                 instagram_button.configure(bg="black")
@@ -330,12 +341,13 @@ def page_transition(old_screen, current_screen, transition=False):
                 refresh_token_button.configure(text="Refresh Token", command=refresh_token)
                 qrcode_image_label.place_forget()
                 stop_server()
-        for item in page_widgets[current_screen]:
-            item['widget'].place(x=item['x'], y=item['y'], width=item['width'], height=item['height'])
+        for item in page_frames[current_screen]:
+            item['frame'].place(x=item['x'], y=item['y'], width=item['width'], height=item['height'])
         carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
     elif transition:
         if old_screen == "Settings":
             root.configure(bg="black")
+            settings_frame.configure(bg="black")
             settings_button.configure(bg="black")
             clock_button.configure(bg="black")
             instagram_button.configure(bg="black")
@@ -351,24 +363,24 @@ def animate_transition(old_screen, current_screen, offset):
         forget_old_screen()
     elif offset == 0:
         if old_screen is not None:
-            for item in page_widgets[old_screen]:
-                item['widget'].place(x=item['x'], y=item['y']-offset, width=item['width'], height=item['height'])
-        for item in page_widgets[current_screen]:
-            item['widget'].place(x=item['x'], y=item['y']+display_height-offset, width=item['width'], height=item['height'])
+            for item in page_frames[old_screen]:
+                item['frame'].place(x=item['x'], y=item['y']-offset, width=item['width'], height=item['height'])
+        for item in page_frames[current_screen]:
+            item['frame'].place(x=item['x'], y=item['y']+display_height-offset, width=item['width'], height=item['height'])
         active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 3)
     else:
         if old_screen is not None:
-            for item in page_widgets[old_screen]:
-                item['widget'].place_configure(y=item['y']-offset)
-        for item in page_widgets[current_screen]:
-            item['widget'].place_configure(y=item['y']+display_height-offset)
+            for item in page_frames[old_screen]:
+                item['frame'].place_configure(y=item['y']-offset)
+        for item in page_frames[current_screen]:
+            item['frame'].place_configure(y=item['y']+display_height-offset)
         active_transition = root.after(20, animate_transition, old_screen, current_screen, offset + 3)
 
 def forget_old_screen():
     global carousel_update_process, old_screen
     if old_screen is not None:
-        for item in page_widgets[old_screen]:
-            item['widget'].place_forget() 
+        for item in page_frames[old_screen]:
+            item['frame'].place_forget() 
         old_screen = None
     carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
@@ -413,19 +425,28 @@ def on_closing():
     print("Window is closing...")
     root.destroy()
 
+# Create and set variables
+
+initialize_environment()
+carousel_update_process = None
+clock_refresh_process = None
+instagram_refresh_process = None
+weather_refresh_process = None
+current_screen = None
+active_transition = None
+text_font = os.getenv("TEXT_FONT")
+display_width = int(os.getenv("DISPLAY_WIDTH"))
+display_height = int(os.getenv("DISPLAY_HEIGHT"))
+
+# Root initialization
 root = tk.Tk()
-
-text_font = 'Arial Rounded MT Bold'
-display_width = 1480
-display_height = 320
-
 root.geometry(str(display_width) + 'x' + str(display_height))
 root.title("Smart Display")
 root.attributes('-fullscreen', False if os.getenv('FULLSCREEN') == "false" else True)
 root.configure(bg="black", cursor="none")
-widget_frame = tk.Frame(root, width=display_width, height=display_height, bg="black")
-widget_frame.place(x=0,y=0)
+root.protocol("WM_DELETE_WINDOW", on_closing)
 
+# Images
 cog_image_large = fit_image_to_widget(os.path.join("images","Cog.png"),250,250)
 cog_image_small = fit_image_to_widget(os.path.join("images","Cog.png"),50,50)
 clock_image_large = fit_image_to_widget(os.path.join("images","Clock.png"),250,250)
@@ -435,99 +456,102 @@ weather_image_small = fit_image_to_widget(os.path.join("images","Weather.png"),5
 camera_image_large = fit_image_to_widget(os.path.join("images","Camera.png"),250,250)
 camera_image_small = fit_image_to_widget(os.path.join("images","Camera.png"),50,50)
 
-settings_logo = tk.Label(widget_frame, bg="#505050", fg="white", image=cog_image_large)
-clock_logo = tk.Label(widget_frame, bg="black", fg="white", image=clock_image_large)
-weather_logo = tk.Label(widget_frame, bg="black", fg="white", image=weather_image_large)
-camera_logo = tk.Label(widget_frame, bg="black", fg="white", image=camera_image_large)
-qrcode_image_label = tk.Label(widget_frame, bg="#505050", fg="#505050")
-
-settings_label = tk.Label(widget_frame, bg="#505050", fg="white", font=(text_font, 50), anchor="center", text="Settings")
-token_label = tk.Label(widget_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has\nX Days Remaining")
-carousel_stop_start_label = tk.Label(widget_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Carousel is\nRunning")
-page_transition_start_stop_label = tk.Label(widget_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Page Transitions\n are On")
-clock_label = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Time")
-weather_label = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Weather")
-instagram_label = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Followers")
-clock_time = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 150), anchor="center")
-clock_date = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 50), anchor="center")
-instagram_followers = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 125), anchor="center")
-weather_now_label = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 30), anchor="center", text="Now")
-weather_now_temp = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 70), anchor="center")
-weather_now_conditions = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
-weather_future_label = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 30), anchor="center")
-weather_future_temp = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 70), anchor="center")
-weather_future_conditions = tk.Label(widget_frame, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
-
+# Navigation buttons
+# Variables
 vertical_margin_right = 10
 button_size = 50
 vertical_margin_top = 15
 vertical_margin_bottom = 15
-
 total_button_height = button_size * 4
 total_vertical_spacing = vertical_margin_top + vertical_margin_bottom
 available_vertical_space = display_height - total_button_height - total_vertical_spacing
 vertical_spacing = available_vertical_space / (4 - 1)
-
-instagram_button_state = tk.DISABLED if update_ig_stats() == "No Valid Token" else tk.NORMAL
-close_window_button = tk.Button(widget_frame, text="Close App", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=on_closing, bd=1, highlightthickness=1)
-carousel_stop_start_button = tk.Button(widget_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
-page_transition_start_stop_button = tk.Button(widget_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_stop_start, bd=1, highlightthickness=1)
-refresh_token_button = tk.Button(widget_frame, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
-settings_button = tk.Button(widget_frame, image=cog_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_settings, bd=0, highlightthickness=0)
-clock_button = tk.Button(widget_frame, image=clock_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_clock, bd=0, highlightthickness=0)
-instagram_button = tk.Button(widget_frame, image=camera_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_instagram, bd=0, highlightthickness=0, state=instagram_button_state)
-weather_button = tk.Button(widget_frame, image=weather_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_weather, bd=0, highlightthickness=0)
-
+# Buttons
+settings_button = tk.Button(root, image=cog_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_settings, bd=0, highlightthickness=0)
 settings_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 0 + vertical_margin_top,width=button_size,height=button_size)
+clock_button = tk.Button(root, image=clock_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_clock, bd=0, highlightthickness=0)
 clock_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 1 + vertical_margin_top,width=button_size,height=button_size)
+instagram_button_state = tk.DISABLED if update_ig_stats() == "No Valid Token" else tk.NORMAL
+instagram_button = tk.Button(root, image=camera_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_instagram, bd=0, highlightthickness=0, state=instagram_button_state)
 instagram_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 2 + vertical_margin_top,width=button_size,height=button_size)
+weather_button = tk.Button(root, image=weather_image_small, bg="black", fg="black", activebackground="grey", width=button_size, height=button_size, command=switch_to_weather, bd=0, highlightthickness=0)
 weather_button.place(x=display_width-button_size-vertical_margin_right,y=(button_size + vertical_spacing) * 3 + vertical_margin_top,width=button_size,height=button_size)
 
-page_widgets = {
+# Clock widgets
+clock_frame = tk.Frame(root, bg="black")
+clock_logo = tk.Label(clock_frame, bg="black", fg="white", image=clock_image_large)
+clock_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+clock_label = tk.Label(clock_frame, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Time")
+clock_label.place(x=260, y=10, width=1000, height=100)
+clock_time = tk.Label(clock_frame, bg="black", fg="white", font=(text_font, 150), anchor="center")
+clock_time.place(x=280, y=100, width=920, height=200)
+clock_date = tk.Label(clock_frame, bg="black", fg="white", font=(text_font, 50), anchor="center")
+clock_date.place(x=1160, y=100, width=180, height=200)
+
+# Instagram widgets
+instagram_frame = tk.Frame(root, bg="black")
+instagram_logo = tk.Label(instagram_frame, bg="black", fg="white", image=camera_image_large)
+instagram_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+instagram_label = tk.Label(instagram_frame, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Followers")
+instagram_label.place(x=260, y=10, width=1000, height=100)
+instagram_followers = tk.Label(instagram_frame, bg="black", fg="white", font=(text_font, 125), anchor="center")
+instagram_followers.place(x=280, y=100, width=960, height=200)
+
+# Weather widgets
+weather_frame = tk.Frame(root, bg="black")
+weather_logo = tk.Label(weather_frame, bg="black", fg="white", image=weather_image_large)
+weather_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+weather_label = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 50), anchor="center", text="Weather")
+weather_label.place(x=260, y=10, width=1000, height=100)
+weather_now_label = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 30), anchor="center", text="Now")
+weather_now_label.place(x=260, y=100, width=480, height=50)
+weather_now_temp = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 70), anchor="center")
+weather_now_temp.place(x=260, y=155, width=480, height=80)
+weather_now_conditions = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
+weather_now_conditions.place(x=260, y=235, width=480, height=80)
+weather_future_label = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 30), anchor="center")
+weather_future_label.place(x=760, y=100, width=480, height=50)
+weather_future_temp = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 70), anchor="center")
+weather_future_temp.place(x=760, y=155, width=480, height=80)
+weather_future_conditions = tk.Label(weather_frame, bg="black", fg="white", font=(text_font, 25), anchor="center", wraplength=480)
+weather_future_conditions.place(x=760, y=235, width=480, height=80)
+
+# Settings widgets
+settings_frame = tk.Frame(root, bg="black")
+settings_logo = tk.Label(settings_frame, bg="#505050", fg="white", image=cog_image_large)
+settings_logo.place(x=10, y=(display_height-250)/2, width=250, height=250)
+settings_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 50), anchor="center", text="Settings")
+settings_label.place(x=260, y=10, width=1000, height=100)
+close_window_button = tk.Button(settings_frame, text="Close App", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=on_closing, bd=1, highlightthickness=1)
+close_window_button.place(x=300, y=35, width=200, height=50)
+carousel_stop_start_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Carousel is\nRunning")
+carousel_stop_start_label.place(x=300, y=110, width=200, height=100)
+carousel_stop_start_button = tk.Button(settings_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
+carousel_stop_start_button.place(x=350, y=210, width=100, height=50)
+token_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has\nX Days Remaining")
+token_label.place(x=725, y=110, width=300, height=100)
+refresh_token_button = tk.Button(settings_frame, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
+refresh_token_button.place(x=775, y=210, width=200, height=50)
+page_transition_start_stop_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Page Transitions\n are On")
+page_transition_start_stop_label.place(x=500, y=110, width=250, height=100)
+page_transition_start_stop_button = tk.Button(settings_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_stop_start, bd=1, highlightthickness=1)
+page_transition_start_stop_button.place(x=575, y=210, width=100, height=50)
+qrcode_image_label = tk.Label(settings_frame, bg="#505050", fg="#505050")
+
+page_frames = {
     'Clock': [
-        {'widget': clock_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
-        {'widget': clock_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10},
-        {'widget': clock_time, 'width': 920, 'height': 200, 'x': 280, 'y': 100},
-        {'widget': clock_date, 'width': 180, 'height': 200, 'x': 1160, 'y': 100}
+        {'frame': clock_frame, 'width': display_width-button_size-vertical_margin_right, 'height': display_height, 'x': 0, 'y': 0}
     ],
     'Instagram': [
-        {'widget': camera_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
-        {'widget': instagram_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10},
-        {'widget': instagram_followers, 'width': 960, 'height': 200, 'x': 280, 'y': 100}
+        {'frame': instagram_frame, 'width': display_width-button_size-vertical_margin_right, 'height': display_height, 'x': 0, 'y': 0}
     ],
     'Weather': [
-        {'widget': weather_now_label, 'width': 480, 'height': 50, 'x': 260, 'y': 100},
-        {'widget': weather_now_temp, 'width': 480, 'height': 80, 'x': 260, 'y': 155},
-        {'widget': weather_now_conditions, 'width': 480, 'height': 80, 'x': 260, 'y': 235},
-        {'widget': weather_future_label, 'width': 480, 'height': 50, 'x': 760, 'y': 100},
-        {'widget': weather_future_temp, 'width': 480, 'height': 80, 'x': 760, 'y': 155},
-        {'widget': weather_future_conditions, 'width': 480, 'height': 80, 'x': 760, 'y': 235},
-        {'widget': weather_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
-        {'widget': weather_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10}
+        {'frame': weather_frame, 'width': display_width-button_size-vertical_margin_right, 'height': display_height, 'x': 0, 'y': 0}
     ],
     'Settings': [
-        {'widget': settings_logo, 'width': 250, 'height': 250, 'x': 10, 'y': (display_height-250)/2},
-        {'widget': settings_label, 'width': 1000, 'height': 100, 'x': 260, 'y': 10},
-        {'widget': close_window_button, 'width': 200, 'height': 50, 'x': 300, 'y': 35},
-        {'widget': carousel_stop_start_label, 'width': 200, 'height': 100, 'x': 300, 'y': 110},
-        {'widget': carousel_stop_start_button, 'width': 100, 'height': 50, 'x': 350, 'y': 210},
-        {'widget': token_label, 'width': 300, 'height': 100, 'x': 725, 'y': 110},
-        {'widget': refresh_token_button, 'width': 200, 'height': 50, 'x': 775, 'y': 210},
-        {'widget': page_transition_start_stop_label, 'width': 250, 'height': 100, 'x': 500, 'y': 110},
-        {'widget': page_transition_start_stop_button, 'width': 100, 'height': 50, 'x': 575, 'y': 210}
+        {'frame': settings_frame, 'width': display_width-button_size-vertical_margin_right, 'height': display_height, 'x': 0, 'y': 0}
     ]
 }
 
-carousel_update_process = None
-clock_refresh_process = None
-instagram_refresh_process = None
-weather_refresh_process = None
-current_screen = None
-active_transition = None
-initialize_environment()
-
 start_carousel()
-
-root.protocol("WM_DELETE_WINDOW", on_closing)
-
 root.mainloop()
