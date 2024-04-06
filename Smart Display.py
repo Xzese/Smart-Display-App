@@ -305,9 +305,10 @@ def page_transition_time():
     page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
 
 def page_transition_time_decrease():
-    os.environ['PAGE_TRANSITION_TIME'] = str(int(page_transition_time_entry.get()) - 1)
-    dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ['PAGE_TRANSITION_TIME'])
-    page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
+    if int(page_transition_time_entry.get()) > 1:
+        os.environ['PAGE_TRANSITION_TIME'] = str(int(page_transition_time_entry.get()) - 1)
+        dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ['PAGE_TRANSITION_TIME'])
+        page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
 
 def page_transition_time_increase():
     os.environ['PAGE_TRANSITION_TIME'] = str(int(page_transition_time_entry.get()) + 1)
@@ -315,8 +316,14 @@ def page_transition_time_increase():
     page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
 
 def validate_input(text):
-    # Check if the input consists of digits only
-    return text.isdigit()
+    try:
+        # Convert the input to an integer
+        number = int(text)
+        # Check if the number is a digit and greater than 0
+        return number > 0
+    except ValueError:
+        # If conversion to integer fails, input is not a digit
+        return False
 
 def page_transition(old_screen, current_screen, transition=False):
     global carousel_update_process, active_transition
