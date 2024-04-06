@@ -256,16 +256,18 @@ def switch_to_settings():
     instagram_button.configure(bg="#505050")
     weather_button.configure(bg="#505050")
     try:
-        ip_address_label.configure(text="IP Address: "+str(get_local_ip()))
+        ip_address_label.configure(text="Local IP: "+str(get_local_ip()))
     except:
-        ip_address_label.configure(text="IP Address is Unavailable")
+        ip_address_label.configure(text="Local IP is Unavailable")
     token_days_remaining = (datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') - datetime.datetime.now()).days
     if token_days_remaining >= 0:
-        token_label.configure(text="Token Has\n"+str(token_days_remaining)+" Days Remaining")
+        token_label.configure(text="Token Has "+str(token_days_remaining)+"\nDays Remaining")
     else:
         token_label.configure(text="Token Has\n Expired")
-    carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
-    carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
+    carousel_stop_start_label.configure(text="Carousel is Running" if os.getenv('CAROUSEL')=='true' else 'Carousel is Stopped')
+    carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Start')
+    page_transition_time_label.configure(text="Page Change Time (s)")
+    page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
 
 def start_carousel():
     global current_screen
@@ -285,8 +287,8 @@ def carousel_stop_start():
     else:
         os.environ['CAROUSEL'] = 'true'
     dotenv.set_key('.env',"CAROUSEL", os.environ['CAROUSEL'])
-    carousel_stop_start_label.configure(text="Carousel is\nRunning" if os.getenv('CAROUSEL')=='true' else 'Carousel is\nStopped')
-    carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Play')
+    carousel_stop_start_label.configure(text="Carousel is Running" if os.getenv('CAROUSEL')=='true' else 'Carousel is Stopped')
+    carousel_stop_start_button.configure(text="Stop" if os.getenv('CAROUSEL')=='true' else 'Start')
 
 def page_transition_stop_start():
     if os.getenv('PAGE_TRANSITION') == 'true':
@@ -294,8 +296,27 @@ def page_transition_stop_start():
     else:
         os.environ['PAGE_TRANSITION'] = 'true'
     dotenv.set_key('.env',"PAGE_TRANSITION", os.environ['PAGE_TRANSITION'])
-    page_transition_start_stop_label.configure(text="Page Transitions\n are On" if os.getenv('PAGE_TRANSITION')=='true' else 'Page Transitions\n are Off')
+    page_transition_start_stop_label.configure(text="Page Transitions are On" if os.getenv('PAGE_TRANSITION')=='true' else 'Page Transitions are Off')
     page_transition_start_stop_button.configure(text="Stop" if os.getenv('PAGE_TRANSITION')=='true' else 'Start')
+
+def page_transition_time():
+    os.environ['PAGE_TRANSITION_TIME'] = str(page_transition_time_entry.get())
+    dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ['PAGE_TRANSITION_TIME'])
+    page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
+
+def page_transition_time_decrease():
+    os.environ['PAGE_TRANSITION_TIME'] = str(int(page_transition_time_entry.get()) - 1)
+    dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ['PAGE_TRANSITION_TIME'])
+    page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
+
+def page_transition_time_increase():
+    os.environ['PAGE_TRANSITION_TIME'] = str(int(page_transition_time_entry.get()) + 1)
+    dotenv.set_key('.env',"PAGE_TRANSITION_TIME", os.environ['PAGE_TRANSITION_TIME'])
+    page_transition_time_var.set(os.getenv("PAGE_TRANSITION_TIME"))
+
+def validate_input(text):
+    # Check if the input consists of digits only
+    return text.isdigit()
 
 def page_transition(old_screen, current_screen, transition=False):
     global carousel_update_process, active_transition
@@ -541,21 +562,33 @@ settings_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_f
 settings_label.place(x=260, y=10, width=1000, height=100)
 close_window_button = tk.Button(settings_frame, text="Close App", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=on_closing, bd=1, highlightthickness=1)
 close_window_button.place(x=300, y=35, width=200, height=50)
-carousel_stop_start_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Carousel is\nRunning")
-carousel_stop_start_label.place(x=300, y=110, width=200, height=100)
-carousel_stop_start_button = tk.Button(settings_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
-carousel_stop_start_button.place(x=350, y=210, width=100, height=50)
-token_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has\nX Days Remaining")
-token_label.place(x=725, y=110, width=300, height=100)
+ip_address_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 13), anchor="center")
+ip_address_label.place(x=760 , y=130, width=250, height=25)
+token_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Token Has X\nDays Remaining")
+token_label.place(x=760, y=160, width=250, height=75)
 refresh_token_button = tk.Button(settings_frame, text="Refresh Token", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=refresh_token, bd=1, highlightthickness=1)
-refresh_token_button.place(x=775, y=210, width=200, height=50)
-page_transition_start_stop_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 20), anchor="center", text="Page Transitions\n are On")
-page_transition_start_stop_label.place(x=500, y=110, width=250, height=100)
+refresh_token_button.place(x=785, y=240, width=200, height=50)
+carousel_stop_start_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 18), anchor="center", text="Carousel is Running")
+carousel_stop_start_label.place(x=300, y=110, width=300, height=50)
+carousel_stop_start_button = tk.Button(settings_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=carousel_stop_start, bd=1, highlightthickness=1)
+carousel_stop_start_button.place(x=625, y=115, width=100, height=40)
+page_transition_start_stop_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 18), anchor="center", text="Page Transitions are On")
+page_transition_start_stop_label.place(x=300, y=160, width=300, height=50)
 page_transition_start_stop_button = tk.Button(settings_frame, text="Stop", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_stop_start, bd=1, highlightthickness=1)
-page_transition_start_stop_button.place(x=575, y=210, width=100, height=50)
+page_transition_start_stop_button.place(x=625, y=165, width=100, height=40)
+page_transition_time_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 18), anchor="center", text="Carousel Time:")
+page_transition_time_label.place(x=300, y=210, width=250, height=50)
+validation = root.register(validate_input)
+page_transition_time_var = tk.StringVar()
+page_transition_time_entry = tk.Entry(settings_frame, textvariable=page_transition_time_var , validate="key",validatecommand=(validation, '%P') , bg="#505050", fg="white", justify="center", font=(text_font, 20), bd=1, highlightthickness=1)
+page_transition_time_entry.place(x=560, y=215, width=50, height=40)
+page_transition_time_button = tk.Button(settings_frame, text="Submit", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_time, bd=1, highlightthickness=1)
+page_transition_time_button.place(x=620, y=215, width=110, height=40)
+page_transition_time_decrease_button = tk.Button(settings_frame, text="<", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_time_decrease, bd=1, highlightthickness=1)
+page_transition_time_decrease_button.place(x=555, y=260, width=30, height=40)
+page_transition_time_increase_button = tk.Button(settings_frame, text=">", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_time_increase, bd=1, highlightthickness=1)
+page_transition_time_increase_button.place(x=585, y=260, width=30, height=40)
 qrcode_image_label = tk.Label(settings_frame, bg="#505050", fg="#505050")
-ip_address_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 14), anchor="center")
-ip_address_label.place(x=750 , y=270, width=250, height=50)
 
 page_frames = {
     'Clock': [
