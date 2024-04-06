@@ -31,7 +31,6 @@ def update_ig_stats():
                 ig_business_account = response.json()
                 os.environ['IG_BUSINESS_USER_ID'] = ig_business_account['data'][0]['instagram_business_account']['id']
                 dotenv.set_key('.env',"IG_BUSINESS_USER_ID", os.environ["IG_BUSINESS_USER_ID"])
-                print('Retrived Business Account ID: ' + os.getenv('IG_BUSINESS_USER_ID'))
             else:
                 # Print the error message if the request was not successful
                 print("Error Update User ID:", response.text)
@@ -70,7 +69,6 @@ def update_ig_stats():
                 dotenv.set_key('.env',"IG_FOLLOWERS_COUNT", os.environ["IG_FOLLOWERS_COUNT"])
                 dotenv.set_key('.env',"IG_FOLLOWS_COUNT", os.environ["IG_FOLLOWS_COUNT"])
                 dotenv.set_key('.env',"IG_LAST_UPDATED", os.environ["IG_LAST_UPDATED"])
-                print("Followers: " + os.environ['IG_FOLLOWERS_COUNT'] + "\nFollowing: " + os.environ['IG_FOLLOWS_COUNT'])
             else:
                 # Print the error message if the request was not successful
                 print("Error Update IG Stats:", response.text)
@@ -178,7 +176,6 @@ def refresh_clock():
     global clock_refresh_process, current_screen, old_screen
     try:
         current_time = datetime.datetime.now()
-        print(current_time.strftime("%d-%b %H:%M:%S"))
         clock_date.configure(text=current_time.strftime("%d\n%b"))
         clock_time.configure(text=current_time.strftime("%H:%M:%S"),fg="white")
     except Exception as e:

@@ -55,7 +55,10 @@ def exchange_code_for_token(code):
     response = requests.post(endpoint_url, params=params)
     if response.status_code == 200:
         instagram_access_token = response.json()['access_token']
-        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=response.json()['expires_in'])
+        try:
+            expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=response.json()['expires_in'])
+        except:
+            expiry_date = os.getenv("ACCESS_TOKEN_EXPIRY")
         os.environ['ACCESS_TOKEN'] = instagram_access_token
         os.environ['ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
         os.environ['IG_BUSINESS_USER_ID'] = ''
