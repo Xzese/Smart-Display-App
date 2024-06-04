@@ -58,7 +58,14 @@ def exchange_code_for_token(code):
         try:
             expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=response.json()['expires_in'])
         except:
-            expiry_date = os.getenv("ACCESS_TOKEN_EXPIRY")
+            debug_token_url = 'https://graph.facebook.com/debug_token'
+            debug_token_params = {
+                'input_token': instagram_access_token,
+                'access_token': os.getenv('CLIENT_ID') + '|' + os.getenv('CLIENT_SECRET')
+            }
+            debug_token_response = requests.get(debug_token_url, params=debug_token_params)
+            expiry_date = datetime.datetime.fromtimestamp(debug_token_response.json()['data']['data_access_expires_at'])
+            expiry_date = expiry_date.strftime('%Y-%m-%d %H:%M:%S.%f')
         os.environ['ACCESS_TOKEN'] = instagram_access_token
         os.environ['ACCESS_TOKEN_EXPIRY'] = str(expiry_date)
         os.environ['IG_BUSINESS_USER_ID'] = ''
