@@ -37,7 +37,7 @@ def get_auth_url():
         'client_id': os.getenv('CLIENT_ID'),
         'redirect_uri': "https://"+os.getenv('CLIENT_IP_ADDRESS')+":5000/callback",
         'state': "{st=state123abc,ds=123456789}",
-        'scope':"pages_show_list,business_management,instagram_basic",
+        'scope':os.getenv('GRAPH_SCOPE'),
         'response_type': 'code'
     }
     authorization_url = f"{auth_url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}"

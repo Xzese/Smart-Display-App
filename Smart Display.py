@@ -14,6 +14,9 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 dotenv.load_dotenv()
 
+os.environ['GRAPH_SCOPE'] = "pages_show_list,business_management,instagram_basic"
+dotenv.set_key('.env',"GRAPH_SCOPE", os.environ["GRAPH_SCOPE"])
+
 def update_ig_stats():
     if os.getenv('ACCESS_TOKEN') is not None and os.getenv('ACCESS_TOKEN') != '' and os.getenv('ACCESS_TOKEN_EXPIRY') is not None and os.getenv('ACCESS_TOKEN_EXPIRY') != '' and datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') > datetime.datetime.now():
         #get Business Account ID if missing
