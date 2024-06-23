@@ -49,8 +49,8 @@ To enable weather functionality in the application, follow these steps:
 
 1. Create a `.env` file in the project directory.
 2. Set the following environment variables in the `.env` file:
-   - `CLIENT_ID`: The App ID obtained from the Facebook Developer Dashboard.
-   - `CLIENT_SECRET`: The App Secret obtained from the Facebook Developer Dashboard.
+   - `APP_ID`: The App ID obtained from the Facebook Developer Dashboard.
+   - `APP_SECRET`: The App Secret obtained from the Facebook Developer Dashboard.
    - `CLIENT_TOKEN`: The Client Token obtained from the Facebook Developer Dashboard.
    - `WEATHER_API_KEY`: A WeatherAPI.com API key obtained from [WeatherAPI.com](https://www.weatherapi.com/). You can sign up for a free account to obtain the API key.
    - `CLIENT_IP_ADDRESS`: The local IP address of the device where the application will run. This can be either `192.168.x.y`, `localhost`, or `127.0.0.1`.

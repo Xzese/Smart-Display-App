@@ -34,7 +34,7 @@ def callback():
 def get_auth_url():
     auth_url = 'https://www.facebook.com/v19.0/dialog/oauth'
     params = {
-        'client_id': os.getenv('CLIENT_ID'),
+        'client_id': os.getenv('APP_ID'),
         'redirect_uri': "https://"+os.getenv('CLIENT_IP_ADDRESS')+":5000/callback",
         'state': "{st=state123abc,ds=123456789}",
         'scope':os.getenv('GRAPH_SCOPE'),
@@ -46,8 +46,8 @@ def get_auth_url():
 def exchange_code_for_token(code):
     endpoint_url = 'https://graph.facebook.com/v19.0/oauth/access_token'
     params = {
-        'client_id': os.getenv('CLIENT_ID'),
-        'client_secret': os.getenv('CLIENT_SECRET'),
+        'client_id': os.getenv('APP_ID'),
+        'client_secret': os.getenv('APP_SECRET'),
         'grant_type': 'authorization_code',
         'redirect_uri': 'https://'+os.getenv('CLIENT_IP_ADDRESS')+':5000/callback',
         'code': code
@@ -61,7 +61,7 @@ def exchange_code_for_token(code):
             debug_token_url = 'https://graph.facebook.com/debug_token'
             debug_token_params = {
                 'input_token': instagram_access_token,
-                'access_token': os.getenv('CLIENT_ID') + '|' + os.getenv('CLIENT_SECRET')
+                'access_token': os.getenv('APP_ID') + '|' + os.getenv('APP_SECRET')
             }
             debug_token_response = requests.get(debug_token_url, params=debug_token_params)
             expiry_date = datetime.datetime.fromtimestamp(debug_token_response.json()['data']['data_access_expires_at'])
