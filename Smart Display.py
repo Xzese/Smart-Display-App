@@ -64,7 +64,10 @@ def update_ig_stats():
                 # Parse the JSON response
                 account_details = response.json()
                 # Print the user's profile information
-                os.environ['IG_FOLLOWER_CHANGE'] = "None" if int(account_details['followers_count']) == int(os.environ['IG_FOLLOWERS_COUNT']) else "Increase" if int(account_details['followers_count']) > int(os.environ['IG_FOLLOWERS_COUNT']) else "Decrease"
+                try:
+                    os.environ['IG_FOLLOWER_CHANGE'] = "None" if int(account_details['followers_count']) == int(os.environ['IG_FOLLOWERS_COUNT']) else "Increase" if int(account_details['followers_count']) > int(os.environ['IG_FOLLOWERS_COUNT']) else "Decrease"
+                except:
+                    os.environ['IG_FOLLOWER_CHANGE'] = "None"
                 os.environ['IG_FOLLOWERS_COUNT'] = str(account_details['followers_count'])
                 os.environ['IG_FOLLOWS_COUNT'] = str(account_details['follows_count'])
                 os.environ['IG_LAST_UPDATED'] = str(datetime.datetime.now())
