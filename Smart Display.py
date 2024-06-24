@@ -7,7 +7,7 @@ import tkinter as tk
 import qrcode
 import threading
 import socket
-from auth_server import wait_for_token, get_auth_url, native_capture, stop_server
+from auth_server import wait_for_token, get_auth_url, local_browser_capture, stop_server
 from PIL import Image, ImageTk
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -433,7 +433,7 @@ def check_thread_status(thread):
 def refresh_token():
     auth_url = get_auth_url()
     qrcode_image = create_qrcode(auth_url)
-    refresh_token_button.configure(command=lambda: native_capture(auth_url), text="Open Browser")
+    refresh_token_button.configure(command=lambda: local_browser_capture(auth_url), text="Open Browser")
     qrcode_image_label.configure(image=qrcode_image)
     qrcode_image_label.image = qrcode_image
     qrcode_image_label.place(x=1000, y=85, width=250, height=250)
