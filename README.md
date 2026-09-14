@@ -1,5 +1,11 @@
 # Smart Display App
 
+<p align="center">
+  <a href="https://github.com/Xzese/Smart-Display-App/stargazers"><img src="https://img.shields.io/github/stars/Xzese/Smart-Display-App?style=flat-square" alt="Stars"></a>
+  <a href="https://github.com/Xzese/Smart-Display-App/commits/main"><img src="https://img.shields.io/github/last-commit/Xzese/Smart-Display-App?style=flat-square" alt="Last commit"></a>
+  <a href="https://github.com/Xzese/Smart-Display-App"><img src="https://img.shields.io/github/languages/top/Xzese/Smart-Display-App?style=flat-square" alt="Top language"></a>
+</p>
+
 This application runs a smart display that shows screens for the time, Instagram followers, and weather. To use the app, follow the instructions below.
 
 ## Navigation Icons
