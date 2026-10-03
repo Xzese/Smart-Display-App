@@ -11,7 +11,7 @@ import sys
 import pytest
 
 
-@pytest.mark.parametrize("scenario", ["demo", "first-run", "providers", "expired", "fullscreen", "windowed"])
+@pytest.mark.parametrize("scenario", ["demo", "first-run", "providers", "expired", "fullscreen", "windowed", "appearance", "saved-theme"])
 def test_desktop_entrypoint(scenario, tmp_path):
     if not os.environ.get("DISPLAY"):
         pytest.skip("GUI E2E requires an X11 display; use xvfb-run")
@@ -20,6 +20,7 @@ def test_desktop_entrypoint(scenario, tmp_path):
         "DISPLAY_WIDTH", "DISPLAY_HEIGHT", "FULLSCREEN", "WEATHER_API_KEY",
         "WEATHER_LOCATION", "GRAPH_API_VERSION", "IG_BUSINESS_USER_ID",
         "ACCESS_TOKEN", "ACCESS_TOKEN_EXPIRY",
+        "DISPLAY_THEME", "TEXT_FONT",
     ):
         env.pop(key, None)
     project = Path(__file__).resolve().parents[1]

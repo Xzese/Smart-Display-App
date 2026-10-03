@@ -1,5 +1,3 @@
 pytest>=8,<10
-requests>=2.31,<3
-python-dotenv>=1,<2
-Pillow>=10,<13
+-r requirements-modern.txt
 python-xlib>=0.33,<1; sys_platform == "linux"

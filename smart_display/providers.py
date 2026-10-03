@@ -20,7 +20,7 @@ def weather(config):
     day, hour, label = (0, 12, "Afternoon") if local_hour < 10 else (0, 18, "Evening") if local_hour < 16 else (1, 12, "Tomorrow")
     forecast = data["forecast"]["forecastday"][day]["hour"][hour]
     current = data["current"]
-    return f"{current['temp_c']} °C · {current['condition']['text']}\n{label}: {forecast['temp_c']} °C"
+    return f"{current['temp_c']} °C · {current['condition']['text']}\n{label}: {forecast['temp_c']} °C · {forecast['condition']['text']}"
 
 
 def instagram(config):
@@ -60,7 +60,7 @@ def instagram(config):
 def configured_providers(config, *, demo=False):
     if demo:
         return {
-            "Weather": lambda: "16 °C · Light cloud\nEvening: 14 °C · Sample data",
+            "Weather": lambda: "16 °C · Light cloud\nEvening: 14 °C · Partly cloudy · Sample data",
             "Instagram": lambda: "1,234 followers\n@example_account · Sample data",
         }
     providers = {}

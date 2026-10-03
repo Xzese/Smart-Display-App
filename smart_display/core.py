@@ -7,9 +7,11 @@ import threading
 
 @dataclass(frozen=True)
 class DisplayConfig:
-    width: int = 960
-    height: int = 320
+    width: int | None = None
+    height: int | None = None
     fullscreen: bool = False
+    text_font: str = "Arial Rounded MT Bold"
+    theme: str = "system"
     weather_key: str = field(default="", repr=False)
     weather_location: str = ""
     graph_version: str = ""
@@ -19,17 +21,23 @@ class DisplayConfig:
 
     @classmethod
     def from_env(cls, env):
-        def dimension(name, default):
-            raw = env.get(name, str(default))
+        def dimension(name):
+            raw = env.get(name, "")
+            if not raw:
+                return None
             if not raw.isascii() or not raw.isdigit() or not 200 <= int(raw) <= 8192:
                 raise ValueError(f"{name} must be between 200 and 8192 pixels.")
             return int(raw)
         fullscreen = env.get("FULLSCREEN", "false").lower()
         if fullscreen not in {"true", "false"}:
             raise ValueError("FULLSCREEN must be true or false.")
+        theme = env.get("DISPLAY_THEME", "system").lower()
+        if theme not in {"system", "light", "dark"}:
+            raise ValueError("DISPLAY_THEME must be system, light or dark.")
         return cls(
-            width=dimension("DISPLAY_WIDTH", 960), height=dimension("DISPLAY_HEIGHT", 320),
+            width=dimension("DISPLAY_WIDTH"), height=dimension("DISPLAY_HEIGHT"),
             fullscreen=fullscreen == "true", weather_key=env.get("WEATHER_API_KEY", ""),
+            text_font=env.get("TEXT_FONT", "Arial Rounded MT Bold"), theme=theme,
             weather_location=env.get("WEATHER_LOCATION", ""), graph_version=env.get("GRAPH_API_VERSION", ""),
             instagram_id=env.get("IG_BUSINESS_USER_ID", ""), access_token=env.get("ACCESS_TOKEN", ""),
             token_expiry=env.get("ACCESS_TOKEN_EXPIRY", ""),

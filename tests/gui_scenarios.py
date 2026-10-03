@@ -18,6 +18,7 @@ from Xlib import X, XK, display
 from Xlib.ext import xtest
 
 from smart_display import __main__ as entrypoint
+from smart_display import ui
 
 
 SCENARIO, TEMP = sys.argv[1], Path(sys.argv[2])
@@ -31,6 +32,8 @@ gate = threading.Event()
 calls = {"Weather": 0, "Instagram": 0}
 network_attempts = []
 server = None
+system_preference = {"theme": "dark"}
+ui.read_system_theme = lambda: system_preference["theme"]
 
 
 class FixtureHandler(BaseHTTPRequestHandler):
@@ -50,8 +53,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
                     "location": {"localtime": "2026-10-03 17:00"},
                     "current": {"temp_c": 16, "condition": {"text": "Light cloud"}},
                     "forecast": {"forecastday": [
-                        {"hour": [{"temp_c": 12} for _ in range(24)]},
-                        {"hour": [{"temp_c": 14} for _ in range(24)]},
+                        {"hour": [{"temp_c": 12, "condition": {"text": "Clear"}} for _ in range(24)]},
+                        {"hour": [{"temp_c": 14, "condition": {"text": "Partly cloudy"}} for _ in range(24)]},
                     ]},
                 }
         else:
@@ -110,7 +113,7 @@ def widgets(parent):
 
 
 def click(name):
-    button = next(w for w in widgets(root) if isinstance(w, tk.Button) and w.cget("text") == name)
+    button = next(w for w in widgets(root) if isinstance(w, (tk.Button, tk.Radiobutton)) and w.cget("text") == name and w.winfo_ismapped())
     xtest.fake_input(wire, X.MotionNotify, x=button.winfo_rootx() + button.winfo_width() // 2,
                      y=button.winfo_rooty() + button.winfo_height() // 2)
     xtest.fake_input(wire, X.ButtonPress, 1)
@@ -127,7 +130,26 @@ def escape():
 
 
 def value():
-    return app.value.cget("text")
+    return app.content_text()
+
+
+def close_app():
+    click("Settings")
+    yield from wait(lambda: app.screen == "Settings" and app.close_button.winfo_ismapped(), "settings close control")
+    click("Close App")
+
+
+def assert_readable():
+    from tkinter import font
+    for widget in app.labels.values():
+        if widget.winfo_ismapped() and widget.cget("text"):
+            actual_font = font.Font(root, font=widget.cget("font"))
+            assert max(actual_font.measure(line) for line in widget.cget("text").splitlines()) <= widget.winfo_width(), widget.cget("text")
+            assert widget.winfo_reqheight() <= widget.winfo_height(), widget.cget("text")
+    for widget in app.theme_choices.values():
+        if widget.winfo_ismapped():
+            assert widget.winfo_reqwidth() <= widget.winfo_width(), widget.cget("text")
+            assert widget.winfo_reqheight() <= widget.winfo_height(), widget.cget("text")
 
 
 def status():
@@ -143,6 +165,8 @@ def wait(predicate, description, timeout=4):
 
 def capture(name):
     root.update_idletasks()
+    if not name.startswith("failure-"):
+        assert_readable()
     x, y = root.winfo_rootx(), root.winfo_rooty()
     size = root.winfo_width(), root.winfo_height()
     shot = ImageGrab.grab(bbox=(x, y, x + size[0], y + size[1]), xdisplay=os.environ["DISPLAY"])
@@ -152,37 +176,57 @@ def capture(name):
 
 def flow():
     yield from wait(lambda: root.winfo_viewable(), "window mapped")
-    assert app.value.winfo_ismapped()
+    yield from wait(lambda: app.value.winfo_ismapped(), "clock content mapped")
     yield from wait(lambda: status() == "Local time", "clock startup")
     assert ":" in value() and "\n" in value()
+    if SCENARIO != "saved-theme":
+        assert root.cget("bg") == "#000000" and app.value.cget("fg") == "#ffffff"
+    assert app.labels["title"].cget("text") == "Time"
+    assert app.logo.cget("image")
+    assert app.navigation["Clock"].winfo_rootx() > app.value.winfo_rootx()
+    assert all(button.cget("image") for button in app.navigation.values())
     if SCENARIO == "demo":
         assert root.title() == "Smart Display · Demo"
-        assert (root.winfo_width(), root.winfo_height()) == (960, 320)
+        assert (root.winfo_width(), root.winfo_height()) == (round(root.winfo_screenwidth() * 0.75), round(root.winfo_screenheight() * 0.75))
         capture("demo-clock")
         click("Weather")
         yield from wait(lambda: "Sample data" in value() and status().startswith("ready"), "demo weather")
         assert "16 °C" in value()
         capture("demo-weather")
         click("Instagram")
-        yield from wait(lambda: "1,234 followers" in value(), "demo Instagram")
+        yield from wait(lambda: app.value.cget("text") == "1,234" and "example_account" in value(), "demo Instagram")
+        assert app.labels["title"].cget("text") == "Followers"
         assert "example_account" in value()
         capture("demo-instagram")
+        root.geometry("1480x320")
+        yield from wait(lambda: root.winfo_width() == 1480, "wide display resize")
+        assert_readable()
+        capture("demo-wide")
         root.geometry("480x200")
         yield from wait(lambda: root.winfo_width() == 480, "narrow resize")
-        assert app.value.winfo_reqwidth() <= 480
-        assert app.value.winfo_reqheight() <= app.value.winfo_height()
+        assert_readable()
         capture("demo-narrow")
         root.geometry("1280x720")
         yield from wait(lambda: root.winfo_width() == 1280, "large resize")
         capture("demo-large")
         assert not network_attempts
-        click("Close")
+        click("Settings")
+        yield from wait(lambda: app.theme_choices["light"].winfo_ismapped(), "demo appearance choices")
+        click("Light")
+        yield from wait(lambda: app.theme == "light", "demo light theme")
+        assert not (TEMP / ".env").exists(), "Demo appearance must not change live settings"
+        for name in ("Weather", "Instagram"):
+            click(name)
+            yield from wait(lambda: app.screen == name and "Sample data" in value(), f"light {name}")
+            assert root.cget("bg") == "#ffffff"
+            capture(f"light-{name.lower()}")
+        yield from close_app()
     elif SCENARIO == "first-run":
         assert root.title() == "Smart Display" and not app.tasks
         capture("first-run-clock")
         for name in ("Weather", "Instagram"):
             click(name)
-            yield from wait(lambda: value() == f"{name} is not configured", f"missing {name}")
+            yield from wait(lambda: f"{name} is not configured" in value(), f"missing {name}")
             assert "clock remains available" in status()
             capture(f"first-run-{name.lower()}")
         root.geometry("480x200")
@@ -202,7 +246,9 @@ def flow():
         capture("provider-refreshing")
         assert calls["Weather"] == 1
         gate.set()
-        yield from wait(lambda: status().startswith("ready") and "Tomorrow: 14 °C" in value(), "weather HTTP fixture")
+        yield from wait(lambda: status().startswith("ready") and app.labels["future_temp"].cget("text") == "14 °C" and "Partly cloudy" in value(), "weather HTTP fixture")
+        assert app.labels["future_label"].cget("text") == "Tomorrow"
+        assert app.labels["future_conditions"].cget("text") == "Partly cloudy"
         last_value, stamp = value(), app.tasks["Weather"].snapshot.updated_at
         capture("provider-weather")
         # Advance the scheduled refresh without waiting a real minute.
@@ -212,7 +258,7 @@ def flow():
         capture("provider-stale")
         click("Instagram")
         yield from wait(lambda: "fixture_account" in value() and status().startswith("ready"), "Instagram HTTP fixture")
-        assert "1,234 followers" in value()
+        assert app.value.cget("text") == "1,234"
         last_value = value()
         app.next_refresh["Instagram"] = 0
         yield from wait(lambda: status().startswith("authentication required"), "HTTP 400 invalid token becomes auth required")
@@ -222,7 +268,7 @@ def flow():
         gate.clear()
         app.next_refresh["Weather"] = 0
         yield from wait(lambda: calls["Weather"] == 3, "pending worker before close")
-        click("Close")
+        yield from close_app()
     elif SCENARIO == "expired":
         click("Instagram")
         yield from wait(lambda: status() == "authentication required", "expired token")
@@ -231,8 +277,49 @@ def flow():
         escape()
     elif SCENARIO == "windowed":
         assert not root.attributes("-fullscreen")
-        assert (root.winfo_width(), root.winfo_height()) == (960, 320)
+        assert (root.winfo_width(), root.winfo_height()) == (round(root.winfo_screenwidth() * 0.75), round(root.winfo_screenheight() * 0.75))
         assert not network_attempts
+        escape()
+    elif SCENARIO == "appearance":
+        from dotenv import dotenv_values
+        click("Settings")
+        yield from wait(lambda: app.theme_choices["light"].winfo_ismapped(), "appearance choices")
+        assert app.theme_mode.get() == "system"
+        capture("settings-dark")
+        root.geometry("480x200")
+        yield from wait(lambda: root.winfo_width() == 480 and root.winfo_height() == 200, "compact settings")
+        yield
+        capture("settings-narrow")
+        root.geometry(f"{round(root.winfo_screenwidth() * 0.75)}x{round(root.winfo_screenheight() * 0.75)}")
+        yield from wait(lambda: root.winfo_width() > 480, "restore settings window")
+        yield
+        click("Light")
+        yield from wait(lambda: app.theme == "light" and root.cget("bg") == "#e6e6e6", "light settings")
+        assert dotenv_values(TEMP / ".env")["DISPLAY_THEME"] == "light"
+        capture("settings-light")
+        click("Clock")
+        yield from wait(lambda: app.screen == "Clock" and root.cget("bg") == "#ffffff", "light clock")
+        assert app.value.cget("fg") == "#000000"
+        capture("light-clock")
+        click("Settings")
+        yield from wait(lambda: app.theme_choices["dark"].winfo_ismapped(), "dark appearance control")
+        system_preference["theme"] = "light"
+        click("Dark")
+        yield from wait(lambda: app.theme == "dark", "explicit dark ignores light system preference")
+        assert dotenv_values(TEMP / ".env")["DISPLAY_THEME"] == "dark"
+        click("Track system")
+        yield from wait(lambda: app.theme == "light", "track system light")
+        assert dotenv_values(TEMP / ".env")["DISPLAY_THEME"] == "system"
+        capture("settings-track-system")
+        system_preference["theme"] = "dark"
+        yield from wait(lambda: app.theme == "dark", "track system updates while running")
+        click("Clock")
+        yield from wait(lambda: root.cget("bg") == "#000000", "return to original dark clock")
+        assert not network_attempts
+        escape()
+    elif SCENARIO == "saved-theme":
+        assert app.theme_mode.get() == "light" and app.theme == "light"
+        assert root.cget("bg") == "#ffffff"
         escape()
     else:
         yield from wait(lambda: bool(root.attributes("-fullscreen")) and
@@ -248,6 +335,10 @@ real_tk, real_app = tk.Tk, entrypoint.DisplayApp
 def record_error(kind, error, tb):
     errors.append("".join(traceback.format_exception(kind, error, tb)))
     if app is not None:
+        try:
+            capture(f"failure-{SCENARIO}")
+        except Exception:
+            pass
         app.close()
     else:
         root.destroy()
@@ -285,11 +376,6 @@ def create_app(*args, **kwargs):
 tk.Tk = create_root
 entrypoint.DisplayApp = create_app
 
-# Read an isolated .env fixture, not the checkout's personal .env.
-import dotenv
-real_load = dotenv.load_dotenv
-dotenv.load_dotenv = lambda *args, **kwargs: real_load(TEMP / ".env")
-
 args = []
 if SCENARIO == "demo":
     args = ["--demo"]
@@ -309,9 +395,11 @@ elif SCENARIO in {"fullscreen", "windowed"}:
     os.environ["FULLSCREEN"] = "true"
     if SCENARIO == "windowed":
         args = ["--windowed"]
+elif SCENARIO == "saved-theme":
+    (TEMP / ".env").write_text("DISPLAY_THEME=light\n")
 
 try:
-    assert entrypoint.main(args) == 0
+    assert entrypoint.main(args, env_path=TEMP / ".env") == 0
     assert app.closed and all(task.closed for task in app.tasks.values())
     assert not errors, "\n".join(errors)
     print(f"PASS {SCENARIO}; HTTP requests: {calls}")
