@@ -7,7 +7,8 @@ import tkinter as tk
 import qrcode
 import threading
 import socket
-from auth_server import wait_for_token, get_auth_url, local_browser_capture, stop_server
+from auth_server import Outcome, wait_for_token, get_auth_url, get_graph_api_version, local_browser_capture, stop_server
+from auth_flow import AuthAttemptTracker, capture_outcome, graph_api_url, outcome_message, outcome_succeeded
 from PIL import Image, ImageTk
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -17,11 +18,19 @@ dotenv.load_dotenv()
 os.environ['GRAPH_SCOPE'] = "pages_show_list,business_management,instagram_basic"
 dotenv.set_key('.env',"GRAPH_SCOPE", os.environ["GRAPH_SCOPE"])
 
+auth_attempts = AuthAttemptTracker()
+auth_thread = None
+
 def update_ig_stats():
     if os.getenv('ACCESS_TOKEN') is not None and os.getenv('ACCESS_TOKEN') != '' and os.getenv('ACCESS_TOKEN_EXPIRY') is not None and os.getenv('ACCESS_TOKEN_EXPIRY') != '' and datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f') > datetime.datetime.now():
+        try:
+            graph_version = get_graph_api_version()
+        except Exception as e:
+            print("Graph API configuration error:", e)
+            return None
         #get Business Account ID if missing
         if len(os.getenv('IG_BUSINESS_USER_ID')) == 0:
-            endpoint_url = 'https://graph.facebook.com/v19.0/me/accounts'
+            endpoint_url = graph_api_url('me/accounts', graph_version)
             params = {
                 'fields': 'instagram_business_account{id,username}',
                 'access_token': os.getenv('ACCESS_TOKEN')
@@ -51,7 +60,7 @@ def update_ig_stats():
             update_required = False
 
         if update_required:
-            endpoint_url = 'https://graph.facebook.com/v19.0/' + os.getenv('IG_BUSINESS_USER_ID')
+            endpoint_url = graph_api_url(os.getenv('IG_BUSINESS_USER_ID'), graph_version)
             params = {
                 'fields': 'id,username,followers_count,follows_count,media_count',
                 'access_token': os.getenv('ACCESS_TOKEN')
@@ -358,7 +367,7 @@ def page_transition(old_screen, current_screen, transition=False):
             for item in page_frames[page]:
                 item['frame'].place_forget() 
 
-    instagram_button.config(state=tk.NORMAL) if instagram_button.cget("state") != tk.DISABLED else None
+    instagram_button.config(state=tk.NORMAL if has_valid_access_token() else tk.DISABLED)
     settings_button.config(state=tk.NORMAL)
     clock_button.config(state=tk.NORMAL)
     weather_button.config(state=tk.NORMAL)
@@ -376,7 +385,8 @@ def page_transition(old_screen, current_screen, transition=False):
                 weather_button.configure(bg="black")
                 refresh_token_button.configure(text="Refresh Token", command=refresh_token)
                 qrcode_image_label.place_forget()
-                stop_server()
+                auth_status_label.place_forget()
+                cancel_auth_attempt()
         for item in page_frames[current_screen]:
             item['frame'].place(x=item['x'], y=item['y'], width=item['width'], height=item['height'])
         carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
@@ -390,7 +400,8 @@ def page_transition(old_screen, current_screen, transition=False):
             weather_button.configure(bg="black")
             refresh_token_button.configure(text="Refresh Token", command=refresh_token)
             qrcode_image_label.place_forget()
-            stop_server()
+            auth_status_label.place_forget()
+            cancel_auth_attempt()
         active_transition = animate_transition(old_screen, current_screen, 0)
 
 def animate_transition(old_screen, current_screen, offset):
@@ -420,28 +431,95 @@ def forget_old_screen():
         old_screen = None
     carousel_update_process = root.after(1000 * int(os.getenv('PAGE_TRANSITION_TIME')), start_carousel) if os.getenv('CAROUSEL') != "false" else None
 
-def check_thread_status(thread):
+def has_valid_access_token():
+    try:
+        expiry = datetime.datetime.strptime(os.getenv('ACCESS_TOKEN_EXPIRY'), '%Y-%m-%d %H:%M:%S.%f')
+        return bool(os.getenv('ACCESS_TOKEN')) and expiry > datetime.datetime.now()
+    except (TypeError, ValueError):
+        return False
+
+def stop_auth_server():
+    try:
+        stop_server()
+    except Exception as e:
+        print("Error stopping authentication server:", e)
+
+def cancel_auth_attempt():
+    auth_attempts.cancel()
+    stop_auth_server()
+
+def show_auth_message(message):
+    auth_status_label.configure(text=message)
+    auth_status_label.place(x=1000, y=85, width=300, height=130)
+    refresh_token_button.configure(text="Retry Login", command=refresh_token, state=tk.NORMAL)
+
+def open_auth_browser():
+    try:
+        local_browser_capture()
+    except Exception as e:
+        cancel_auth_attempt()
+        qrcode_image_label.place_forget()
+        show_auth_message("Could not open the login page: {}".format(e))
+
+def check_thread_status(attempt, thread, result):
+    if not auth_attempts.is_current(attempt):
+        return
     if thread.is_alive():
         print("Waiting for Token")
-        root.after(1000, check_thread_status, thread)
+        root.after(1000, check_thread_status, attempt, thread, result)
     else:
         thread.join()
+        if not auth_attempts.complete(attempt):
+            return
+        if current_screen != "Settings":
+            return
+        outcome = result.get("outcome", Outcome.FAILED)
         dotenv.load_dotenv()
-        instagram_button.config(state=tk.NORMAL)
-        switch_to_clock()
+        qrcode_image_label.place_forget()
+        if outcome_succeeded(outcome):
+            auth_status_label.place_forget()
+            instagram_button.config(state=tk.NORMAL)
+            refresh_token_button.configure(text="Refresh Token", command=refresh_token, state=tk.NORMAL)
+            switch_to_clock()
+        else:
+            stop_auth_server()
+            show_auth_message(outcome_message(outcome))
 
 def refresh_token():
-    auth_url = get_auth_url()
-    qrcode_image = create_qrcode(auth_url)
-    refresh_token_button.configure(command=lambda: local_browser_capture(), text="Open Browser")
-    qrcode_image_label.configure(image=qrcode_image)
-    qrcode_image_label.image = qrcode_image
-    qrcode_image_label.place(x=1000, y=85, width=250, height=250)
+    global auth_thread
+    attempt = auth_attempts.begin(worker_alive=auth_thread is not None and auth_thread.is_alive())
+    if attempt is None:
+        show_auth_message("The previous login is still stopping. Wait a moment, then retry.")
+        return
 
-    token_thread = threading.Thread(target=wait_for_token)
-    token_thread.start()
+    auth_status_label.place_forget()
+    try:
+        auth_url = get_auth_url()
+        qrcode_image = create_qrcode(auth_url)
+        refresh_token_button.configure(command=open_auth_browser, text="Open Browser", state=tk.NORMAL)
+        qrcode_image_label.configure(image=qrcode_image)
+        qrcode_image_label.image = qrcode_image
+        qrcode_image_label.place(x=1000, y=85, width=250, height=250)
+    except Exception as e:
+        auth_attempts.complete(attempt)
+        stop_auth_server()
+        qrcode_image_label.place_forget()
+        show_auth_message("Could not start Facebook login: {}".format(e))
+        return
 
-    root.after(1000, check_thread_status, token_thread)
+    result = {"outcome": Outcome.FAILED}
+    auth_thread = threading.Thread(
+        target=lambda: result.update(outcome=capture_outcome(wait_for_token, Outcome.FAILED))
+    )
+    try:
+        auth_thread.start()
+    except Exception as e:
+        auth_attempts.complete(attempt)
+        stop_auth_server()
+        qrcode_image_label.place_forget()
+        show_auth_message("Could not start Facebook login: {}".format(e))
+        return
+    root.after(1000, check_thread_status, attempt, auth_thread, result)
     
 def create_qrcode(auth_url):
     qr = qrcode.QRCode(
@@ -457,7 +535,7 @@ def create_qrcode(auth_url):
     return photo_image
 
 def on_closing():
-    stop_server()
+    cancel_auth_attempt()
     print("Window is closing...")
     root.destroy()
 
@@ -602,6 +680,7 @@ page_transition_time_decrease_button.place(x=555, y=260, width=30, height=40)
 page_transition_time_increase_button = tk.Button(settings_frame, text=">", bg="#505050", fg="white",activebackground="grey", activeforeground="white", font=(text_font, 20), command=page_transition_time_increase, bd=1, highlightthickness=1)
 page_transition_time_increase_button.place(x=585, y=260, width=30, height=40)
 qrcode_image_label = tk.Label(settings_frame, bg="#505050", fg="#505050")
+auth_status_label = tk.Label(settings_frame, bg="#505050", fg="white", font=(text_font, 15), anchor="center", wraplength=290, justify="center")
 
 page_frames = {
     'Clock': [
