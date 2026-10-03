@@ -36,9 +36,9 @@ Before running the application, follow these steps to set up the required enviro
 9. After configuring Facebook Login, repeat step 7 and select "Instagram Graph API".
 10. Follow the prompts to configure Instagram Graph API for your app.
 11. Navigate to the "Settings" tab in the app dashboard.
-12. In the "Basic" settings, add the app domain (127.0.0.1) in the "App Domains" field. This will whitelist the redirect URIs.
-13. In the "Facebook Login" settings, add the client local IP address (in the format `https://127.0.0.1/callback`) to the "Valid OAuth Redirect URIs".
-14. Save your changes.
+12. In the "Basic" settings, add the app domain for the device running Smart Display.
+13. In the "Facebook Login" settings, add `https://<CLIENT_IP_ADDRESS>:5000/callback` to "Valid OAuth Redirect URIs", replacing the placeholder with the exact value of `CLIENT_IP_ADDRESS` from your `.env` file. The callback uses the local server's ad-hoc TLS certificate, as in the browser login flow.
+14. Save your changes. The redirect URI in Facebook settings must match the configured address, scheme, port, and path exactly.
 
 ### Setting Up Weather Functionality
 
@@ -59,7 +59,8 @@ To enable weather functionality in the application, follow these steps:
    - `APP_SECRET`: The App Secret obtained from the Facebook Developer Dashboard.
    - `CLIENT_TOKEN`: The Client Token obtained from the Facebook Developer Dashboard.
    - `WEATHER_API_KEY`: A WeatherAPI.com API key obtained from [WeatherAPI.com](https://www.weatherapi.com/). You can sign up for a free account to obtain the API key.
-   - `CLIENT_IP_ADDRESS`: The local IP address of the device where the application will run. This can be either `192.168.x.y`, `localhost`, or `127.0.0.1`.
+   - `CLIENT_IP_ADDRESS`: The address of the device where the application will run, such as `192.168.x.y`, `localhost`, or `127.0.0.1`. This value must match the host in the Facebook redirect URI, `https://<CLIENT_IP_ADDRESS>:5000/callback`.
+   - `GRAPH_API_VERSION` (optional): The Graph API version to use for both Instagram requests, for example `v26.0`. When unset or blank, the app uses `v26.0`.
 
 Ensure that the `.env` file contains these variables with their respective values before running the application. These variables are necessary for the application to communicate with the Facebook Graph API and WeatherAPI.com services.
 
@@ -75,9 +76,7 @@ To obtain an access token, follow these steps:
 
 **Note:** The website may display a warning that it's not secure, as it uses adhoc SSL certificates.
 
-The application spins up a server which it shuts down either when the long-lived token is retrieved or when the user navigates away from the settings page.
-
-Once the access token is generated, it clears the `IG_BUSINESS_USER_ID` environment variable. When the Instagram screen refreshes the statistics, the application will retrieve the Business ID again from the Facebook Graph API endpoint.
+The application starts a local callback server on port 5000 during login. It stops when login finishes or when you leave the Settings page. The returned OAuth access token and expiry are saved to `.env`; the application does not perform a separate exchange for a long-lived token. A denied login, timeout, or other failure leaves the app in Settings with a message and a retry option.
 
 ## Instagram Functionality
 
@@ -102,3 +101,7 @@ The weather information displayed includes the current temperature and condition
 - After 12:00 AM: Shows the forecast for 12:00 PM of the same day.
 
 The application fetches weather data based on the specified location and displays it on the weather screen. Ensure that the `.env` file contains the required environment variables for accessing the WeatherAPI.com service.
+
+## Validation
+
+Initialize the pinned helper with `git submodule update --init --recursive`, install `requirements.txt`, then run `python -m unittest discover -s tests`. The tests exercise the app entry point with headless UI and provider fixtures, including unsuccessful login retries, stale results after navigation and both Instagram request URLs. They do not perform live Meta authentication or validate graphical layout.
