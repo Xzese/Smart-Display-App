@@ -1,19 +1,22 @@
-# Portfolio modernisation
+# Smart Display modernisation
 
-Placeholder for a focused modernisation of the Smart Display application.
+Status: implementation started; keep the PR in draft.
 
-## Scope
-- Make startup safe when credentials or optional integrations are not configured.
-- Separate UI, runtime state, configuration, authentication and external providers.
-- Move weather and Instagram network work off the Tkinter UI event loop and add bounded timeouts.
-- Preserve the last successful values and expose clear offline, stale and authentication-required states.
-- Add a deterministic offline/demo mode with bundled fictional data.
-- Improve layout scaling while retaining the original wide-display use case.
-- Add automated tests for first-run, slow/offline providers, authentication cancellation and shutdown.
-- Review the Facebook/Instagram Graph API version and update it through a tested, configurable integration.
-- Refresh the README with a quick-start demo, architecture notes and real screenshots.
+## Implemented
+- Opt-in `python -m smart_display` entry point with no import-time UI work.
+- Credential-free demo through the same provider interface as live data.
+- Validated dimensions and fullscreen settings.
+- Separate configuration, provider, refresh-state and UI modules.
+- Background refresh, one in-flight call per provider and bounded network I/O waits.
+- Last successful data, stale and authentication-required states.
+- Basic resizing, navigation and late-result-safe shutdown.
+- Twelve focused tests passed; Xvfb open/navigation/close smoke check passed.
 
-## Portfolio outcome
-Show a clear before-and-after case study: the original functional prototype evolved into a modular, resilient and testable display application.
+## Remaining
+- Migrate settings, carousel, transitions, original visual design and QR authentication.
+- Integrate the explicit outcomes from the local OAuth PR before updating its submodule pin.
+- Verify live Graph/Weather API contracts and the intended Raspberry Pi display.
+- Add package metadata, CI, complete provider fixtures and screenshots.
+- Retire the old script only after feature parity and a tested migration.
 
-No implementation is included in this placeholder PR.
+See docs/modernisation.md. The legacy script and auth pin are intentionally unchanged in this first pass.
