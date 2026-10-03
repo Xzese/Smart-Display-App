@@ -8,6 +8,16 @@
 
 This application runs a smart display that shows screens for the time, Instagram followers, and weather. To use the app, follow the instructions below.
 
+## Opt-in modern display
+
+The modern entry point starts without optional credentials and includes an offline demo:
+
+```sh
+python -m smart_display --demo
+```
+
+See the [modern display guide](docs/modernisation.md) for setup and the [E2E validation report](docs/e2e-validation.md) for tested behavior. This entry point is still under development; the legacy application instructions follow below.
+
 ## Navigation Icons
 
 The application utilizes three image assets for navigation icons:

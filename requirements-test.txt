@@ -1,0 +1,3 @@
+pytest>=8,<10
+-r requirements-modern.txt
+python-xlib>=0.33,<1; sys_platform == "linux"
