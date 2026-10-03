@@ -86,3 +86,27 @@ def test_importing_entrypoint_does_not_create_a_window(monkeypatch):
     monkeypatch.setattr(tkinter, "Tk", Mock(side_effect=AssertionError("Unexpected window")))
     import smart_display.__main__
     tkinter.Tk.assert_not_called()
+
+
+@pytest.mark.parametrize("status,code", [(400, 190), (400, 102), (401, None), (403, None)])
+def test_graph_authentication_errors(monkeypatch, status, code):
+    import requests
+    response = requests.Response()
+    response.status_code = status
+    response._content = ('{"error":{"code":%s}}' % (code or "null")).encode()
+    monkeypatch.setattr(requests, "get", Mock(return_value=response))
+    with pytest.raises(AuthenticationRequired):
+        instagram(DisplayConfig(access_token="fixture", instagram_id="123", graph_version="v99.0",
+                                token_expiry="2099-01-01T00:00:00Z"))
+
+
+@pytest.mark.parametrize("body", [b'{"error":{"code":100}}', b'not JSON', b'[]'])
+def test_non_authentication_graph_errors_remain_http_errors(monkeypatch, body):
+    import requests
+    response = requests.Response()
+    response.status_code = 400
+    response._content = body
+    monkeypatch.setattr(requests, "get", Mock(return_value=response))
+    with pytest.raises(requests.HTTPError):
+        instagram(DisplayConfig(access_token="fixture", instagram_id="123", graph_version="v99.0",
+                                token_expiry="2099-01-01T00:00:00Z"))

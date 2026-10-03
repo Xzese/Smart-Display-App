@@ -51,6 +51,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Generated GUI validation screenshots stay local.
+/docs/screenshots/
+
 # Translations
 *.mo
 *.pot

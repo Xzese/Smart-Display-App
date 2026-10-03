@@ -24,6 +24,8 @@ Weather requires WEATHER_API_KEY and WEATHER_LOCATION. Instagram requires ACCESS
 
 ## Validation and remaining work
 
-Twelve focused tests passed locally. A Tkinter smoke check under Xvfb opened the demo, changed screens and closed the window. No real device, WeatherAPI or Meta integration test was run.
+The suite now has 19 focused tests and six desktop E2E scenarios. All 25 passed locally under Xvfb/Openbox using a project virtual environment. The GUI tests exercise the production entry point, real X11 mouse/keyboard input, offline demo, first run, resize, fullscreen/windowed behavior, slow requests, stale data, authentication errors and shutdown. Fifteen screenshots were captured and inspected locally; generated screenshots are ignored by Git. The JUnit report is committed; see [E2E validation](e2e-validation.md) for reproduction commands and evidence.
+
+Weather and Instagram responses in E2E tests come from a local HTTP fixture server; external network connections are blocked by the driver. No real device or authenticated WeatherAPI/Meta integration test was run.
 
 The existing application's settings, QR authentication, carousel, animations and visual design have not yet been migrated. Keep the PR in draft until these gaps, packaging, CI and provider contracts are reviewed. The old script still has the limitations described in the audit.

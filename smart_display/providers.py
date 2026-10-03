@@ -44,6 +44,14 @@ def instagram(config):
     )
     if response.status_code in {401, 403}:
         raise AuthenticationRequired()
+    if response.status_code >= 400:
+        try:
+            error = response.json().get("error", {})
+        except (ValueError, AttributeError):
+            error = {}
+        # Graph token/session errors can use HTTP 400, not just 401/403.
+        if isinstance(error, dict) and error.get("code") in {102, 190}:
+            raise AuthenticationRequired()
     response.raise_for_status()
     data = response.json()
     return f"{int(data['followers_count']):,} followers\n@{data['username']}"
